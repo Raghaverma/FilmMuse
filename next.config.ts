@@ -1,12 +1,16 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "m.media-amazon.com" }, // OMDb poster host
-      { protocol: "https", hostname: "image.tmdb.org" }      // (optional) TMDB if you add it later
+      { protocol: "https", hostname: "m.media-amazon.com" },
+      { protocol: "https", hostname: "ia.media-imdb.com" },
+      { protocol: "https", hostname: "img.omdbapi.com" },
     ],
+    // or simply:
+    // domains: ["m.media-amazon.com", "ia.media-imdb.com", "img.omdbapi.com"],
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

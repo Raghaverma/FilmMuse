@@ -7,9 +7,12 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "build:movies": "tsx scripts/build-movies-jsonl.ts data/movies_metadata.csv"
+    "build:movies": "tsx scripts/build-movies-jsonl.ts data/movies_metadata.csv",
+    "build:index": "tsx scripts/build-index.ts"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -29,6 +32,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
     "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "p-limit": "^7.1.1",

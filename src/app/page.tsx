@@ -84,8 +84,6 @@ export default function Page() {
       <NavBar />
       <Hero />
       <TrustBar />
-      <SectionFeatures />
-      <SectionHowItWorks />
       <SectionDiscover />
       <Footer />
     </main>
@@ -126,17 +124,6 @@ function NavBar() {
             Discover
           </a>
         </nav>
-
-        {/* single CTA kept; no auth */}
-        <div className="hidden items-center gap-2 md:flex">
-          <Button asChild className="group bg-emerald-400 text-black hover:bg-emerald-300">
-            <a href="#discover" aria-label="Try FilmMuse">
-              Try FilmMuse
-              <ArrowRight className="ml-1 h-4 w-4 -translate-x-0 transition group-hover:translate-x-0.5" />
-            </a>
-          </Button>
-        </div>
-
         <MobileMenu />
       </div>
     </header>
@@ -182,10 +169,6 @@ function Hero() {
     <section className="relative overflow-hidden" aria-labelledby="hero-title">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
         <div className="flex flex-col items-center text-center">
-          <Badge className="mb-4 border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
-            <Sparkles className="mr-1 h-3.5 w-3.5" /> AI-powered film discovery
-          </Badge>
-
           <motion.h1
             id="hero-title"
             initial={prefersReduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
@@ -204,9 +187,6 @@ function Hero() {
 
           <div className="mt-8 w-full max-w-xl">
             <SearchBar />
-            <p className="mt-3 text-xs text-neutral-500">
-              Try: “slow-burn sci-fi with hopeful ending”
-            </p>
           </div>
 
           <div className="mt-10 grid grid-cols-2 gap-3 text-xs text-neutral-400 sm:grid-cols-4">
@@ -429,102 +409,6 @@ function TrustBar() {
     </div>
   );
 }
-
-/* Features */
-function SectionFeatures() {
-  const prefersReduced = useReducedMotion();
-  const items = [
-    {
-      icon: <Heart className="h-5 w-5" />,
-      title: "Taste Modeling",
-      body: "Learns from what you watch to surface films you’ll actually love.",
-    },
-    {
-      icon: <SlidersHorizontal className="h-5 w-5" />,
-      title: "Mood Filters",
-      body: "Dial in pacing, tone, time period, languages, and more.",
-    },
-    {
-      icon: <ListChecks className="h-5 w-5" />,
-      title: "Smart Lists",
-      body: "Auto-curated watchlists that update as your taste evolves.",
-    },
-    {
-      icon: <Sparkles className="h-5 w-5" />,
-      title: "Explain Like a Friend",
-      body: "Spoiler-free, vibe-first descriptions and what-you-ll-feel notes.",
-    },
-  ];
-
-  return (
-    <section id="features" className="relative" aria-labelledby="features-title">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <h2 id="features-title" className="sr-only">
-          Features
-        </h2>
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((it, i) => (
-            <motion.div
-              key={it.title}
-              initial={prefersReduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-              whileInView={prefersReduced ? undefined : { opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: i * 0.06 }}
-            >
-              <Card className="h-full border-white/10 bg-white/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm text-neutral-200">
-                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-400/10 ring-1 ring-emerald-400/30">
-                      {it.icon}
-                    </span>
-                    {it.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-neutral-400">{it.body}</CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* How it works */
-/* How it works */
-function SectionHowItWorks() {
-  const prefersReduced = useReducedMotion();
-  const steps = [
-    { n: 1, t: "Tell us your vibes", d: "Pick moods, pacing, and a couple of all-time favorites." },
-    { n: 2, t: "We build your taste graph", d: "An adaptive profile maps themes, genres, and tones to you." },
-    { n: 3, t: "Get curated picks", d: "Shortlists + trailers that match exactly what you’re in the mood for." },
-  ];
-
-  return (
-    <section id="how" className="relative" aria-labelledby="how-title">
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-        <h2 id="how-title" className="sr-only">How it works</h2>
-        <div className="grid gap-6 sm:grid-cols-3">
-          {steps.map((s, i) => (
-            <motion.div
-              key={s.n}
-              initial={prefersReduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-              whileInView={prefersReduced ? undefined : { opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: i * 0.08 }}
-              className="rounded-2xl border border-white/10 bg-white/5 p-6"
-            >
-              <div className="mb-3 text-xs text-emerald-300">Step {s.n}</div>
-              <div className="font-medium text-neutral-200">{s.t}</div>
-              <div className="mt-1 text-sm text-neutral-400">{s.d}</div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 
 /* Discover */
 function SectionDiscover() {
