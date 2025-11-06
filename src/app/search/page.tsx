@@ -7,7 +7,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ArrowLeft, Plus } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
+import MovieCard from "@/components/MovieCard";
+import MovieInteraction from "@/components/MovieInteraction";
+import MovieDetailsModal from "@/components/MovieDetailsModal";
+import Poster from "@/components/Poster";
 import {
   Select,
   SelectTrigger,
@@ -15,14 +19,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { AnimatePresence, motion } from "framer-motion";
 
 type Movie = {
@@ -46,93 +42,18 @@ const GENRES = [
   "Sci-Fi","Thriller","War","Western",
 ] as const;
 
-type SortKey = "relevance" | "title" | "year";
-type SortOrder = "asc" | "desc";
-
 const PAGE_SIZE = 30;
 const DEBOUNCE_MS = 300;
-const LS_LISTS_KEY = "filmmuse_lists_v1";
 
-type ListsStore = Record<string, Movie[]>;
-
-/** Poster that prefers given `poster`, otherwise fetches it from /api/poster */
-function Poster({
-  title,
-  year,
-  poster,
-  className,
-  ratio = "16/9",
-}: {
-  title: string;
-  year?: number;
-  poster?: string | null;
-  className?: string;
-  ratio?: `${number}/${number}` | "16/9" | "2/3";
-}) {
-  const [src, setSrc] = React.useState<string | null>(poster ?? null);
-  const [loading, setLoading] = React.useState<boolean>(!poster);
-  const [tried, setTried] = React.useState<boolean>(false);
-
-  React.useEffect(() => {
-    if (src || tried) return;
-    let alive = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const url = `/api/poster?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}`;
-        // Debug: this will prove the card is fetching posters
-        console.log("[Poster] fetching:", url);
-        const res = await fetch(url, { cache: "force-cache" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (alive && data?.poster) setSrc(data.poster as string);
-      } catch {
-        // ignore
-      } finally {
-        if (alive) {
-          setLoading(false);
-          setTried(true);
-        }
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [src, tried, title, year]);
-
-  return (
-    <div
-      className={className}
-      style={{ aspectRatio: ratio }}
-    >
-      {src ? (
-        <img
-          src={src}
-          alt={`${title} poster`}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-          onError={() => setSrc(null)}
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-white/5 text-xs text-neutral-400">
-          {loading ? "Loading…" : "No image"}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function SearchPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const qFromUrl = (sp.get("q") || "").trim();
   const genreFromUrl = (sp.get("genre") || "").trim();
-  const sortFromUrl = (sp.get("sort") as SortKey) || "relevance";
-  const orderFromUrl = (sp.get("order") as SortOrder) || "asc";
 
   const [q, setQ] = React.useState(qFromUrl);
   const [genre, setGenre] = React.useState<string>(genreFromUrl);
-  const [sort, setSort] = React.useState<SortKey>(sortFromUrl);
-  const [order, setOrder] = React.useState<SortOrder>(orderFromUrl);
 
   const [loading, setLoading] = React.useState(false);
   const [results, setResults] = React.useState<Movie[]>([]);
@@ -145,34 +66,6 @@ export default function SearchPage() {
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const abortRef = React.useRef<AbortController | null>(null);
 
-  // ==== Saved Lists: local storage store ====
-  const [lists, setLists] = React.useState<ListsStore>({});
-  const listNames = React.useMemo(() => Object.keys(lists).sort(), [lists]);
-  React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LS_LISTS_KEY);
-      setLists(raw ? (JSON.parse(raw) as ListsStore) : {});
-    } catch {
-      setLists({});
-    }
-  }, []);
-  const persistLists = React.useCallback((next: ListsStore) => {
-    setLists(next);
-    try {
-      localStorage.setItem(LS_LISTS_KEY, JSON.stringify(next));
-    } catch {/* ignore */}
-  }, []);
-  const addToList = React.useCallback((listName: string, movie: Movie) => {
-    if (!listName.trim()) return;
-    const key = listName.trim();
-    setLists(prev => {
-      const existing = prev[key] ?? [];
-      const had = existing.some(m => m.id === movie.id);
-      const next = { ...prev, [key]: had ? existing : [movie, ...existing] };
-      try { localStorage.setItem(LS_LISTS_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  }, []);
 
   // Rotating animated hint
   const HINTS = React.useMemo(
@@ -190,27 +83,88 @@ export default function SearchPage() {
   }, [HINTS]);
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
 
-  // initial fetch once (if URL has params)
+  const syncUrl = React.useCallback((next: { q?: string; genre?: string }) => {
+    const url = new URL(window.location.href);
+    if (next.q !== undefined) {
+      if (next.q) url.searchParams.set("q", next.q);
+      else url.searchParams.delete("q");
+    }
+    if (next.genre !== undefined) {
+      if (next.genre) url.searchParams.set("genre", next.genre);
+      else url.searchParams.delete("genre");
+    }
+    window.history.replaceState(null, "", url.toString());
+  }, []);
+
+  function buildApiUrl(args: { q?: string; genre?: string; limit?: number; offset?: number }) {
+    const url = new URL(`/api/search`, window.location.origin);
+    if (args.q) url.searchParams.set("q", args.q);
+    if (args.genre) url.searchParams.set("genre", args.genre);
+    url.searchParams.set("limit", String(args.limit ?? PAGE_SIZE));
+    url.searchParams.set("offset", String(args.offset ?? 0));
+    return url.toString();
+  }
+
+  const runSearchRef = React.useRef<((args: { q?: string; genre?: string; offset: number; reset: boolean }) => Promise<void>) | null>(null);
+
+  const runSearch = React.useCallback(async (args: { q?: string; genre?: string; offset: number; reset: boolean }) => {
+    const { q: qArg, genre: gArg, offset, reset } = args;
+    setError(null);
+    setLoading(true);
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
+    try {
+      const url = buildApiUrl({ q: qArg?.trim(), genre: gArg, limit: PAGE_SIZE, offset });
+      const res = await fetch(url, { method: "GET", cache: "no-store", signal: ac.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = (await res.json()) as ApiResponse | { items?: Movie[] };
+      const items = "items" in data && Array.isArray(data.items) ? data.items : [];
+      const apiTotal = "total" in data && typeof data.total === "number" ? data.total : items.length;
+      const apiNext = "nextOffset" in data ? (data.nextOffset as number | null) : null;
+      const apiSource = "source" in data ? (data.source as "index" | "fallback" | undefined) : undefined;
+
+      setResults((prev) => (reset ? items : [...prev, ...items]));
+      setTotal(apiTotal);
+      setNextOffset(apiNext);
+      setUsedFallback(apiSource === "fallback");
+      syncUrl({ q: qArg, genre: gArg });
+    } catch (e: unknown) {
+      if ((e as any)?.name === "AbortError") return;
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+      if (args.reset) {
+        setResults([]);
+        setTotal(0);
+        setNextOffset(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [syncUrl]);
+
+  runSearchRef.current = runSearch;
+
   React.useEffect(() => {
     if (qFromUrl || genreFromUrl) {
-      void runSearch({ q: qFromUrl, genre: genreFromUrl, sort, order, offset: 0, reset: true });
+      void runSearch({ q: qFromUrl, genre: genreFromUrl, offset: 0, reset: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounce query typing
   const [debouncedQ, setDebouncedQ] = React.useState(q);
   React.useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q.trim()), DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [q]);
 
-  // Auto search when filters/sort change (and debounced query)
   React.useEffect(() => {
     if (!debouncedQ && !genre) return;
-    void runSearch({ q: debouncedQ, genre, sort, order, offset: 0, reset: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, genre, sort, order]);
+    if (runSearchRef.current) {
+      void runSearchRef.current({ q: debouncedQ, genre, offset: 0, reset: true });
+    }
+  }, [debouncedQ, genre]);
 
   // Keyboard shortcuts: "/" to focus, Esc clears query
   React.useEffect(() => {
@@ -226,115 +180,27 @@ export default function SearchPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  function syncUrl(next: { q?: string; genre?: string; sort?: SortKey; order?: SortOrder }) {
-    const url = new URL(window.location.href);
-    const setOrDelete = (k: string, v?: string) => {
-      if (v && v.trim()) url.searchParams.set(k, v);
-      else url.searchParams.delete(k);
-    };
-    setOrDelete("q", next.q ?? q);
-    setOrDelete("genre", next.genre ?? genre);
-    setOrDelete("sort", next.sort ?? sort);
-    setOrDelete("order", next.order ?? order);
-    window.history.replaceState(null, "", url.toString());
-  }
-
-  function buildApiUrl(args: {
-    q?: string;
-    genre?: string;
-    sort?: SortKey;
-    order?: SortOrder;
-    limit?: number;
-    offset?: number;
-  }) {
-    const url = new URL(`/api/search`, window.location.origin);
-    if (args.q) url.searchParams.set("q", args.q);
-    if (args.genre) url.searchParams.set("genre", args.genre);
-    if (args.sort && args.sort !== "relevance") url.searchParams.set("sort", args.sort);
-    if (args.order) url.searchParams.set("order", args.order);
-    url.searchParams.set("limit", String(args.limit ?? PAGE_SIZE));
-    url.searchParams.set("offset", String(args.offset ?? 0));
-    return url.toString();
-  }
-
-  async function runSearch(args: {
-    q?: string;
-    genre?: string;
-    sort?: SortKey;
-    order?: SortOrder;
-    offset: number;
-    reset: boolean;
-  }) {
-    const { q: qArg, genre: gArg, sort: sArg, order: oArg, offset, reset } = args;
-    setError(null);
-    setLoading(true);
-
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    try {
-      const url = buildApiUrl({
-        q: qArg?.trim(),
-        genre: gArg,
-        sort: sArg,
-        order: oArg,
-        limit: PAGE_SIZE,
-        offset,
-      });
-
-      const res = await fetch(url, { method: "GET", cache: "no-store", signal: ac.signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = (await res.json()) as ApiResponse | { items?: Movie[] };
-      const items = "items" in data && Array.isArray(data.items) ? data.items : [];
-      const apiTotal = "total" in data && typeof data.total === "number" ? data.total : items.length;
-      const apiNext = "nextOffset" in data ? (data.nextOffset as number | null) : null;
-      const apiSource = "source" in data ? (data.source as "index" | "fallback" | undefined) : undefined;
-
-      setResults((prev) => (reset ? items : [...prev, ...items]));
-      setTotal(apiTotal);
-      setNextOffset(apiNext);
-      setUsedFallback(apiSource === "fallback");
-
-      syncUrl({ q: qArg, genre: gArg, sort: sArg, order: oArg });
-    } catch (e: unknown) {
-      if ((e as any)?.name === "AbortError") return;
-      const msg = e instanceof Error ? e.message : "Something went wrong.";
-      setError(msg);
-      if (args.reset) {
-        setResults([]);
-        setTotal(0);
-        setNextOffset(null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void runSearch({ q: q.trim(), genre, sort, order, offset: 0, reset: true });
+    void runSearch({ q: q.trim(), genre, offset: 0, reset: true });
   };
 
   const applyFilters = () => {
-    void runSearch({ q: q.trim(), genre, sort, order, offset: 0, reset: true });
+    void runSearch({ q: q.trim(), genre, offset: 0, reset: true });
   };
 
   const clearFilters = () => {
     setQ("");
     setGenre("");
-    setSort("relevance");
-    setOrder("asc");
     setResults([]);
     setTotal(0);
     setNextOffset(null);
-    syncUrl({ q: "", genre: "", sort: "relevance", order: "asc" });
+    syncUrl({ q: "", genre: "" });
   };
 
   const loadMore = () => {
     if (nextOffset == null) return;
-    void runSearch({ q: q.trim(), genre, sort, order, offset: nextOffset, reset: false });
+    void runSearch({ q: q.trim(), genre, offset: nextOffset, reset: false });
   };
 
   // ===== Actor Pair Finder =====
@@ -349,54 +215,97 @@ export default function SearchPage() {
     router.push(`/pair?${params.toString()}`);
   };
 
-  // ===== UI Pieces =====
-  const ResultCard = ({ m }: { m: Movie }) => (
-    <article
-      className="overflow-hidden rounded-xl border border-white/10 bg-white/5"
-      aria-label={m.title}
-    >
-      <div className="relative">
-        <Poster title={m.title} year={m.year} poster={m.poster ?? null} ratio="16/9" className="w-full" />
-      </div>
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{m.title}</div>
-            <div className="text-xs text-neutral-400">
-              {[m.year, m.meta].filter(Boolean).join("•") || "—"}
+  const handleUpdate = React.useCallback(() => {
+    // Refresh can be handled by parent components if needed
+  }, []);
+
+  const ResultCard = ({ m }: { m: Movie }) => {
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    
+    return (
+      <>
+        <article
+          className="overflow-hidden rounded-xl border border-white/10 bg-white/5 group cursor-pointer"
+          aria-label={m.title}
+          onClick={() => setIsModalOpen(true)}
+        >
+          <div className="relative">
+            <Poster title={m.title} year={m.year} poster={m.poster ?? null} ratio="16/9" className="w-full" />
+            <div 
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MovieInteraction
+                movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
+                onUpdate={handleUpdate}
+              />
             </div>
           </div>
-
-          {/* Add to List — dialog trigger */}
-          <AddToListDialog movie={m} listNames={listNames} onAdd={(name) => addToList(name, m)} />
-        </div>
-      </div>
-    </article>
-  );
-
-  const ResultRow = ({ m }: { m: Movie }) => (
-    <article
-      className="flex gap-3 rounded-xl border border-white/10 bg-white/5 p-2"
-      aria-label={m.title}
-    >
-      <Poster
-        title={m.title}
-        year={m.year}
-        poster={m.poster ?? null}
-        ratio="16/9"
-        className="relative h-20 w-36 shrink-0 overflow-hidden rounded-md bg-white/5"
-      />
-      <div className="flex w-full items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{m.title}</div>
-          <div className="text-xs text-neutral-400">
-            {[m.year, m.meta].filter(Boolean).join("•") || "—"}
+          <div className="p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium" title={m.title}>{m.title}</div>
+                <div className="text-xs text-neutral-400">
+                  {[m.year, m.meta].filter(Boolean).join("•") || "—"}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <AddToListDialog movie={m} listNames={listNames} onAdd={(name) => addToList(name, m)} />
-      </div>
-    </article>
-  );
+        </article>
+        <MovieDetailsModal
+          movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onUpdate={handleUpdate}
+        />
+      </>
+    );
+  };
+
+  const ResultRow = ({ m }: { m: Movie }) => {
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    
+    return (
+      <>
+        <article
+          className="flex gap-3 rounded-xl border border-white/10 bg-white/5 p-2 group cursor-pointer"
+          aria-label={m.title}
+          onClick={() => setIsModalOpen(true)}
+        >
+          <Poster
+            title={m.title}
+            year={m.year}
+            poster={m.poster ?? null}
+            ratio="16/9"
+            className="relative h-20 w-36 shrink-0 overflow-hidden rounded-md bg-white/5"
+          />
+          <div className="flex w-full items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium" title={m.title}>{m.title}</div>
+              <div className="text-xs text-neutral-400">
+                {[m.year, m.meta].filter(Boolean).join("•") || "—"}
+              </div>
+            </div>
+            <div 
+              className="opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MovieInteraction
+                movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
+                onUpdate={handleUpdate}
+              />
+            </div>
+          </div>
+        </article>
+        <MovieDetailsModal
+          movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onUpdate={handleUpdate}
+        />
+      </>
+    );
+  };
 
   const Skeleton = () => (
     <div className="animate-pulse overflow-hidden rounded-xl border border-white/10 bg-white/5">
@@ -413,18 +322,21 @@ export default function SearchPage() {
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         {/* Header with Home button */}
         <header className="mb-4 flex items-center justify-between">
-          <Link href="/" aria-label="Go to Home">
+          <Link href="/home" aria-label="Go to Home">
             <Button type="button" className="bg-white/10 hover:bg-white/15 text-neutral-200">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Home
             </Button>
           </Link>
           <h1 className="text-2xl font-semibold">Search</h1>
-          <div className="w-[84px] sm:w-[96px]" aria-hidden="true" />
+          <div className="flex items-center gap-3">
+            <Link href="/profile" className="text-sm text-neutral-300 hover:text-white">Profile</Link>
+            <Link href="/logout" className="text-sm text-neutral-300 hover:text-white">Logout</Link>
+          </div>
         </header>
 
         {/* Controls */}
-        <form onSubmit={onSubmit} className="mt-2 grid gap-2 sm:grid-cols-[200px_auto_1fr_auto_auto_auto]">
+        <form onSubmit={onSubmit} className="mt-2 grid gap-2 sm:grid-cols-[200px_1fr_auto_auto]">
           {/* Genre */}
           <div className="flex">
             <label className="sr-only" htmlFor="genre">Genre</label>
@@ -437,35 +349,6 @@ export default function SearchPage() {
                 {GENRES.map((g) => (
                   <SelectItem key={g} value={g}>{g}</SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Sort */}
-          <div className="flex">
-            <label className="sr-only" htmlFor="sort">Sort</label>
-            <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-              <SelectTrigger id="sort" className="bg-white/5 border-white/10">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1a1a] text-neutral-100">
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="title">Title</SelectItem>
-                <SelectItem value="year">Year</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Order */}
-          <div className="flex">
-            <label className="sr-only" htmlFor="order">Order</label>
-            <Select value={order} onValueChange={(v) => setOrder(v as SortOrder)}>
-              <SelectTrigger id="order" className="bg-white/5 border-white/10">
-                <SelectValue placeholder="Order" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1a1a] text-neutral-100">
-                <SelectItem value="asc">Asc</SelectItem>
-                <SelectItem value="desc">Desc</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -566,7 +449,6 @@ export default function SearchPage() {
           <p className="text-sm text-neutral-400">
             {results.length}{total ? ` of ${total}` : ""} result{(total || results.length) > 1 ? "s" : ""} found
             {genre ? ` • Genre: ${genre}` : ""}
-            {sort !== "relevance" ? ` • Sort: ${sort} (${order})` : ""}
           </p>
           {usedFallback && (
             <span className="text-xs text-amber-300">
@@ -605,123 +487,8 @@ export default function SearchPage() {
           )}
         </section>
 
-        {/* Lists summary (optional quick view) */}
-        {listNames.length > 0 && (
-          <div className="mt-10">
-            <h2 className="mb-2 text-lg font-medium">Your Lists</h2>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {listNames.map((name) => (
-                <div key={name} className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{name}</span>
-                    <span className="text-xs text-neutral-400">{lists[name]?.length ?? 0} items</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
 }
 
-/** Add-to-list dialog component (local-first) */
-function AddToListDialog({
-  movie,
-  listNames,
-  onAdd,
-}: {
-  movie: Movie;
-  listNames: string[];
-  onAdd: (listName: string) => void;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const [mode, setMode] = React.useState<"choose" | "create">("choose");
-  const [selected, setSelected] = React.useState<string>(listNames[0] ?? "");
-  const [newName, setNewName] = React.useState("");
-
-  React.useEffect(() => {
-    if (open) {
-      setSelected((prev) => prev || listNames[0] || "");
-    }
-  }, [open, listNames]);
-
-  const canSave = mode === "choose" ? !!selected : !!newName.trim();
-
-  const save = () => {
-    const name = mode === "choose" ? selected : newName.trim();
-    if (!name) return;
-    onAdd(name);
-    setOpen(false);
-    setMode("choose");
-    setNewName("");
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="bg-emerald-400 text-black hover:bg-emerald-300" title="Add to List">
-          <Plus className="mr-1 h-4 w-4" />
-          Add to List
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="bg-[#101010] text-neutral-100 border-white/10">
-        <DialogHeader>
-          <DialogTitle className="text-base">Add “{movie.title}” to a list</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant={mode === "choose" ? "default" : "secondary"}
-              className={mode === "choose" ? "bg-white/15 hover:bg-white/20" : "bg-white/5 hover:bg-white/10 text-neutral-200"}
-              onClick={() => setMode("choose")}
-            >
-              Choose existing
-            </Button>
-            <Button
-              type="button"
-              variant={mode === "create" ? "default" : "secondary"}
-              className={mode === "create" ? "bg-white/15 hover:bg-white/20" : "bg-white/5 hover:bg-white/10 text-neutral-200"}
-              onClick={() => setMode("create")}
-            >
-              Create new
-            </Button>
-          </div>
-
-          {mode === "choose" ? (
-            listNames.length ? (
-              <Select value={selected || (listNames[0] ?? "")} onValueChange={setSelected}>
-                <SelectTrigger className="bg-white/5 border-white/10">
-                  <SelectValue placeholder="Pick a list" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1a1a] text-neutral-100">
-                  {listNames.map((n) => (
-                    <SelectItem key={n} value={n}>{n}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <p className="text-sm text-neutral-400">No lists yet — switch to “Create new”.</p>
-            )
-          ) : (
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g., Weekend Watchlist"
-              className="bg-white/5 border-white/10"
-            />
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button type="button" className="bg-emerald-400 text-black hover:bg-emerald-300" disabled={!canSave} onClick={save}>
-            Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}

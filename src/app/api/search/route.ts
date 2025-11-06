@@ -98,33 +98,17 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") || "";
   const genre = searchParams.get("genre") || "";
-  const sort = (searchParams.get("sort") || "").toLowerCase();  // "relevance" | "title" | "year"
-  const order = (searchParams.get("order") || "asc").toLowerCase(); // "asc" | "desc"
   const limit = parseNum(searchParams.get("limit"), 30, 1, 100);
   const offset = parseNum(searchParams.get("offset"), 0, 0, 1000000);
 
   let pool: Row[] = ROWS;
-
-  // Genre filter (case-insensitive; keys are lowercased)
   if (genre) {
     const key = norm(genre);
     pool = GENRE_MAP.get(key) ?? [];
   }
 
   const qn = norm(q);
-
-  // Choose base ordering
-  let result: Row[];
-  if (sort === "title") {
-    result = [...pool].sort((a, b) => a.title.localeCompare(b.title));
-  } else if (sort === "year") {
-    result = [...pool].sort((a, b) => (a.year ?? 0) - (b.year ?? 0));
-  } else {
-    // default: relevance (if q present) else title
-    result = qn ? rankAndSort(pool, qn) : [...pool].sort((a, b) => a.title.localeCompare(b.title));
-  }
-
-  if (order === "desc") result.reverse();
+  const result = qn ? rankAndSort(pool, qn) : [...pool].sort((a, b) => a.title.localeCompare(b.title));
 
   const total = result.length;
   const slice = result.slice(offset, offset + limit);

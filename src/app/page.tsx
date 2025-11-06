@@ -5,22 +5,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-
 import {
   Film,
-  Sparkles,
-  Heart,
-  ListChecks,
-  SlidersHorizontal,
-  ArrowRight,
   Star,
   Search,
 } from "lucide-react";
+import { getCurrentUser, login, signup } from "@/lib/auth-client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const FILMS = [
   {
@@ -35,7 +33,7 @@ const FILMS = [
     title: "Demon Slayer: Infinity Castle",
     year: 2025,
     meta: "Anime • Action • Fantasy",
-    poster: "/banners/Demon%20Slayer%20Infinity%20Castle.jpg",
+    poster: "/banners/Demon Slayer Infinity Castle.jpg",
   },
   {
     id: "get-out",
@@ -70,7 +68,7 @@ const FILMS = [
     title: "The Grand Budapest Hotel",
     year: 2014,
     meta: "Comedy • Drama • 1h 39m",
-    poster: "/banners/The%20Grand%20Budapest%20Hotel.jpg",
+    poster: "/banners/The Grand Budapest Hotel.jpg",
   },
 ];
 
@@ -81,56 +79,104 @@ export default function Page() {
       className="min-h-screen bg-[#0a0a0a] text-neutral-100 selection:bg-emerald-300/20 selection:text-emerald-200"
     >
       <DottedBG />
+
       <NavBar />
+
       <Hero />
+
       <TrustBar />
+
       <SectionDiscover />
+
       <Footer />
     </main>
   );
 }
 
 /* ─────────────────────────────────────── Sections ─────────────────────────────────────── */
-
 function NavBar() {
-  return (
-    <header
-      role="banner"
-      className="sticky top-0 z-50 border-b border-white/5 backdrop-blur supports-[backdrop-filter]:bg-black/40"
-    >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 font-semibold tracking-tight"
-          aria-label="FilmMuse home"
-        >
-          <span className="grid h-7 w-7 place-items-center rounded-md bg-emerald-400/10 ring-1 ring-emerald-400/30">
-            <Film className="h-4 w-4 text-emerald-300" />
-          </span>
-          <span className="text-sm uppercase text-neutral-300">FilmMuse</span>
-        </Link>
+  const [user, setUser] = React.useState<{ email: string; username: string } | null>(null);
+  const [showAuthDialog, setShowAuthDialog] = React.useState(false);
+  const [isLogin, setIsLogin] = React.useState(true);
 
-        <nav
-          aria-label="Primary"
-          className="hidden items-center gap-6 text-sm text-neutral-300 md:flex"
-        >
-          <a href="#features" className="hover:text-white">
-            Features
-          </a>
-          <a href="#how" className="hover:text-white">
-            How it works
-          </a>
-          <a href="#discover" className="hover:text-white">
-            Discover
-          </a>
-        </nav>
-        <MobileMenu />
-      </div>
-    </header>
+  React.useEffect(() => {
+    const u = getCurrentUser();
+    setUser(u);
+  }, []);
+
+  const handleAuthSuccess = () => {
+    const u = getCurrentUser();
+    setUser(u);
+    setShowAuthDialog(false);
+  };
+
+  return (
+    <>
+      <header
+        role="banner"
+        className="sticky top-0 z-50 border-b border-white/5 backdrop-blur supports-[backdrop-filter]:bg-black/40"
+      >
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 font-semibold tracking-tight"
+            aria-label="FilmMuse home"
+          >
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-emerald-400/10 ring-1 ring-emerald-400/30">
+              <Film className="h-4 w-4 text-emerald-300" />
+            </span>
+            <span className="text-sm uppercase text-neutral-300">FilmMuse</span>
+          </Link>
+          <nav
+            aria-label="Primary"
+            className="hidden items-center gap-6 text-sm text-neutral-300 md:flex"
+          >
+            {user ? (
+              <Link href="/profile" className="hover:text-white">
+                Profile
+              </Link>
+            ) : (
+              <>
+                <button onClick={() => { setIsLogin(true); setShowAuthDialog(true); }} className="hover:text-white">
+                  Log in
+                </button>
+                <button 
+                  onClick={() => { setIsLogin(false); setShowAuthDialog(true); }} 
+                  className="rounded-md border border-white/15 px-3 py-1.5 hover:bg-white/10"
+                >
+                  Sign up
+                </button>
+              </>
+            )}
+          </nav>
+          <MobileMenu user={user} setIsLogin={setIsLogin} setShowAuthDialog={setShowAuthDialog} />
+        </div>
+      </header>
+
+      {/* Auth Dialog */}
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent className="bg-[#0b0b0d] text-neutral-100 border-white/10 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold">
+              {isLogin ? "Log in" : "Create your account"}
+            </DialogTitle>
+          </DialogHeader>
+          {isLogin ? (
+            <LoginForm onSuccess={handleAuthSuccess} onSwitchToSignup={() => setIsLogin(false)} />
+          ) : (
+            <SignupForm onSuccess={handleAuthSuccess} onSwitchToLogin={() => setIsLogin(true)} />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
-function MobileMenu() {
+function MobileMenu({ user, setIsLogin, setShowAuthDialog }: { 
+  user: { email: string; username: string } | null;
+  setIsLogin: (val: boolean) => void;
+  setShowAuthDialog: (val: boolean) => void;
+}) {
   return (
     <details className="md:hidden">
       <summary className="list-none">
@@ -148,14 +194,14 @@ function MobileMenu() {
       </summary>
       <div className="absolute left-0 right-0 mt-3 border-t border-white/10 bg-black/90 backdrop-blur">
         <nav className="flex flex-col gap-3 px-4 py-4 text-sm" aria-label="Mobile">
-          <a href="#features">Features</a>
-          <a href="#how">How it works</a>
-          <a href="#discover">Discover</a>
-          <div className="pt-2">
-            <Button asChild className="w-full bg-emerald-400 text-black hover:bg-emerald-300">
-              <a href="#discover">Try FilmMuse</a>
-            </Button>
-          </div>
+          {user ? (
+            <Link href="/profile">Profile</Link>
+          ) : (
+            <>
+              <button onClick={() => { setIsLogin(true); setShowAuthDialog(true); }}>Log in</button>
+              <button onClick={() => { setIsLogin(false); setShowAuthDialog(true); }}>Sign up</button>
+            </>
+          )}
         </nav>
       </div>
     </details>
@@ -179,16 +225,13 @@ function Hero() {
           >
             Find the perfect film for your mood.
           </motion.h1>
-
           <p className="mt-4 max-w-2xl text-neutral-400">
             FilmMuse learns what you like and curates watchlists, trailers, and hidden
             gems — all without the endless scroll.
           </p>
-
           <div className="mt-8 w-full max-w-xl">
             <SearchBar />
           </div>
-
           <div className="mt-10 grid grid-cols-2 gap-3 text-xs text-neutral-400 sm:grid-cols-4">
             {["Mood graphs", "Trailer snapshots", "Smart lists", "Spoiler-free synopses"].map(
               (t) => (
@@ -240,7 +283,6 @@ function SearchBar() {
 }
 
 /* ───────────────────────── Hero Visual: Banner Carousel ───────────────────────── */
-
 function HeroVisual() {
   const prefersReduced = useReducedMotion();
 
@@ -300,6 +342,7 @@ function BannerCarousel({
       <div className="relative aspect-[16/9] w-full">
         {items.map((f, i) => {
           const active = i === index;
+
           return (
             <motion.div
               key={f.id}
@@ -341,7 +384,6 @@ function BannerCarousel({
           );
         })}
       </div>
-
       {/* Controls */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-between p-2 sm:p-3">
         <button
@@ -377,7 +419,6 @@ function BannerCarousel({
           </svg>
         </button>
       </div>
-
       {/* Dots */}
       <div className="absolute bottom-2 left-0 right-0 flex items-center justify-center gap-1.5">
         {items.map((_, i) => (
@@ -420,7 +461,6 @@ function SectionDiscover() {
             Today&apos;s curated lineup
           </h2>
         </div>
-
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {FILMS.map((f, idx) => (
             <article
@@ -445,7 +485,6 @@ function SectionDiscover() {
                   <div className="absolute inset-0 hidden bg-gradient-to-t from-black/60 via-black/10 to-transparent group-hover:opacity-90 sm:block" />
                   <div className="absolute inset-0 sm:hidden bg-[radial-gradient(circle_at_60%_40%,rgba(16,185,129,.15),transparent_50%)]" />
                 </div>
-
                 <div className="absolute inset-x-0 bottom-0 z-[1] p-3">
                   <div className="text-sm font-medium text-neutral-100 drop-shadow">
                     {f.title}
@@ -455,7 +494,6 @@ function SectionDiscover() {
                   </div>
                 </div>
               </div>
-
               <div className="p-3">
                 <div className="flex items-center gap-2 text-xs text-neutral-400">
                   <Star className="h-4 w-4 text-neutral-500" /> Curated for your vibe
@@ -475,38 +513,11 @@ function Footer() {
       className="border-t border-white/5 bg-[#0a0a0a] text-sm text-neutral-500"
       role="contentinfo"
     >
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 sm:flex-row sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
           <Film className="h-4 w-4 text-neutral-400" aria-hidden="true" />
           <span className="text-xs">© {new Date().getFullYear()} FilmMuse, Inc.</span>
         </div>
-
-        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs" aria-label="Footer">
-          <a href="#" className="hover:text-neutral-300">
-            Terms
-          </a>
-          <a href="#" className="hover:text-neutral-300">
-            Privacy
-          </a>
-          <a href="#" className="hover:text-neutral-300">
-            Security
-          </a>
-          <a href="#" className="hover:text-neutral-300">
-            Status
-          </a>
-          <a href="#" className="hover:text-neutral-300">
-            Community
-          </a>
-          <a href="#" className="hover:text-neutral-300">
-            Docs
-          </a>
-          <a href="#" className="hover:text-neutral-300">
-            Contact
-          </a>
-          <a href="#" className="hover:text-neutral-300">
-            Manage cookies
-          </a>
-        </nav>
       </div>
     </footer>
   );
@@ -542,6 +553,148 @@ function DottedBG() {
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── Auth Forms ───────────────────────── */
+function LoginForm({ onSuccess, onSwitchToSignup }: { onSuccess: () => void; onSwitchToSignup: () => void }) {
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await login({ email, password });
+      onSuccess();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Login failed";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-4">
+      <p className="mb-4 text-sm text-neutral-400">Welcome back to FilmMuse.</p>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <div>
+          <label htmlFor="email" className="mb-1 block text-sm text-neutral-300">Email</label>
+          <Input 
+            id="email" 
+            type="email" 
+            value={email} 
+            onChange={e => setEmail(e.target.value)} 
+            className="bg-white/5 border-white/10" 
+            required 
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="mb-1 block text-sm text-neutral-300">Password</label>
+          <Input 
+            id="password" 
+            type="password" 
+            value={password} 
+            onChange={e => setPassword(e.target.value)} 
+            className="bg-white/5 border-white/10" 
+            required 
+          />
+        </div>
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        <div className="mt-2 flex items-center gap-3">
+          <Button type="submit" disabled={loading} className="bg-emerald-400 text-black hover:bg-emerald-300">
+            {loading ? "Signing in…" : "Log in"}
+          </Button>
+          <button 
+            type="button" 
+            onClick={onSwitchToSignup} 
+            className="text-sm text-emerald-300 hover:text-emerald-200"
+          >
+            Need an account? Sign up
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function SignupForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; onSwitchToLogin: () => void }) {
+  const [email, setEmail] = React.useState("");
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await signup({ email, username, password });
+      onSuccess();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Signup failed";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-4">
+      <p className="mb-4 text-sm text-neutral-400">It takes less than a minute.</p>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <div>
+          <label htmlFor="name" className="mb-1 block text-sm text-neutral-300">Name</label>
+          <Input 
+            id="name" 
+            value={username} 
+            onChange={e => setUsername(e.target.value)} 
+            className="bg-white/5 border-white/10" 
+            required 
+          />
+        </div>
+        <div>
+          <label htmlFor="email" className="mb-1 block text-sm text-neutral-300">Email</label>
+          <Input 
+            id="email" 
+            type="email" 
+            value={email} 
+            onChange={e => setEmail(e.target.value)} 
+            className="bg-white/5 border-white/10" 
+            required 
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="mb-1 block text-sm text-neutral-300">Password</label>
+          <Input 
+            id="password" 
+            type="password" 
+            value={password} 
+            onChange={e => setPassword(e.target.value)} 
+            className="bg-white/5 border-white/10" 
+            required 
+          />
+        </div>
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        <div className="mt-2 flex items-center gap-3">
+          <Button type="submit" disabled={loading} className="bg-emerald-400 text-black hover:bg-emerald-300">
+            {loading ? "Creating…" : "Sign up"}
+          </Button>
+          <button 
+            type="button" 
+            onClick={onSwitchToLogin} 
+            className="text-sm text-emerald-300 hover:text-emerald-200"
+          >
+            Already have an account? Log in
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
