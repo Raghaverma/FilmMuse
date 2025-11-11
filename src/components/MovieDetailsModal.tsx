@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, Clock, Calendar, Globe, Award, Film } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X, Star, Clock, Calendar, Award, Film } from "lucide-react";
 import MovieInteraction from "./MovieInteraction";
 import { getUserRatings } from "@/lib/auth-client";
 
@@ -106,7 +105,7 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
     return () => {
       cancelled = true;
     };
-  }, [isOpen, movie.id]);
+  }, [isOpen, movie.id, movie.title, movie.year]);
 
   const handleClose = React.useCallback(() => {
     setDetails(null);

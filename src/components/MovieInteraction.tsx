@@ -6,7 +6,6 @@ import {
   Bookmark, 
   Heart, 
   Star, 
-  Plus,
   Check,
   ListPlus
 } from "lucide-react";
@@ -92,7 +91,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setWatchlist(wl);
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch (err) {
+    } catch {
       toast.error("Failed to update watchlist");
     }
   };
@@ -112,7 +111,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setWatchlist(wl);
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch (err) {
+    } catch {
       toast.error("Failed to update favorites");
     }
   };
@@ -127,7 +126,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
         setShowRatingDialog(false);
         setIsMenuOpen(false);
         onUpdate?.();
-      } catch (err) {
+      } catch {
         toast.error("Failed to rate movie");
       }
     }
@@ -140,7 +139,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setShowListDialog(false);
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch (err) {
+    } catch {
       toast.error("Failed to add to list");
     }
   };

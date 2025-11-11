@@ -2,12 +2,19 @@
 import fs from "fs";
 import path from "path";
 
+export type CastMember = {
+  id?: number;
+  name?: string;
+  character?: string;
+  [key: string]: unknown;
+};
+
 export type Movie = {
   id: string;
   title: string;
   year?: number;
   genres?: string[];
-  cast?: any[];
+  cast?: CastMember[];
   meta?: string;
 };
 

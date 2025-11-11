@@ -6,15 +6,11 @@ import { useRouter } from "next/navigation";
 import { 
   getCurrentUser, 
   getUserWatchlist, 
-  removeFromWatchlist, 
-  removeFromLiked,
   getUserCustomLists,
   createCustomList,
   updateCustomList,
   deleteCustomList,
-  removeMovieFromCustomList,
   getUserRatings,
-  rateMovie,
   removeRating,
   getUserActivities,
   type Activity,
@@ -85,15 +81,6 @@ export default function ProfilePage() {
     setActivities(userActivities);
   }, []);
 
-  const handleRemoveFromWatchlist = (movieId: string) => {
-    removeFromWatchlist(movieId);
-    refreshData();
-  };
-
-  const handleRemoveFromLiked = (movieId: string) => {
-    removeFromLiked(movieId);
-    refreshData();
-  };
 
   const handleCreateList = (name: string, description?: string) => {
     createCustomList(name, description);
@@ -120,15 +107,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleRemoveFromList = (listId: string, movieId: string) => {
-    removeMovieFromCustomList(listId, movieId);
-    refreshData();
-  };
-
-  const handleRateMovie = (movieId: string, movieTitle: string, rating: number, movieYear?: number, moviePoster?: string | null) => {
-    rateMovie(movieId, movieTitle, rating, movieYear, moviePoster);
-    refreshData();
-  };
 
   const handleRemoveRating = (movieId: string) => {
     removeRating(movieId);

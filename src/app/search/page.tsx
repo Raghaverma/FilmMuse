@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, ArrowLeft, Shuffle } from "lucide-react";
@@ -45,7 +45,6 @@ const searchCache = new Map<string, { data: ApiResponse; timestamp: number }>();
 const CACHE_TTL = 60000; // 1 minute cache
 
 export default function SearchPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   
   // Get initial values from URL
@@ -163,7 +162,7 @@ export default function SearchPage() {
       window.history.replaceState({}, "", newUrl.toString());
 
     } catch (err: unknown) {
-      if ((err as any)?.name === "AbortError") return;
+      if (err instanceof Error && err.name === "AbortError") return;
       
       const errorMessage = err instanceof Error ? err.message : "Something went wrong";
       setError(errorMessage);
