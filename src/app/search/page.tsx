@@ -1,17 +1,13 @@
 "use client";
 
 import * as React from "react";
-// NOTE: We’re not using next/image here to avoid remote domain issues while debugging.
-// import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ArrowLeft } from "lucide-react";
+import { Search, ArrowLeft, Shuffle } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
-import MovieInteraction from "@/components/MovieInteraction";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
-import Poster from "@/components/Poster";
 import {
   Select,
   SelectTrigger,
@@ -19,14 +15,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { AnimatePresence, motion } from "framer-motion";
 
 type Movie = {
   id: string;
   title: string;
   year?: number;
   meta?: string;
-  poster?: string | null; // allow null
+  poster?: string | null;
 };
 
 type ApiResponse = {
@@ -37,292 +32,245 @@ type ApiResponse = {
 };
 
 const GENRES = [
-  "Action","Adventure","Animation","Comedy","Crime","Documentary","Drama",
-  "Family","Fantasy","History","Horror","Music","Mystery","Romance",
-  "Sci-Fi","Thriller","War","Western",
+  "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama",
+  "Family", "Fantasy", "History", "Horror", "Music", "Mystery", "Romance",
+  "Sci-Fi", "Thriller", "War", "Western",
 ] as const;
 
 const PAGE_SIZE = 30;
-const DEBOUNCE_MS = 300;
+const DEBOUNCE_MS = 500;
 
+// Cache to prevent duplicate fetches
+const searchCache = new Map<string, { data: ApiResponse; timestamp: number }>();
+const CACHE_TTL = 60000; // 1 minute cache
 
 export default function SearchPage() {
   const router = useRouter();
-  const sp = useSearchParams();
-  const qFromUrl = (sp.get("q") || "").trim();
-  const genreFromUrl = (sp.get("genre") || "").trim();
+  const searchParams = useSearchParams();
+  
+  // Get initial values from URL
+  const initialQuery = React.useMemo(() => (searchParams.get("q") || "").trim(), [searchParams]);
+  const initialGenre = React.useMemo(() => (searchParams.get("genre") || "").trim(), [searchParams]);
 
-  const [q, setQ] = React.useState(qFromUrl);
-  const [genre, setGenre] = React.useState<string>(genreFromUrl);
-
-  const [loading, setLoading] = React.useState(false);
+  const [query, setQuery] = React.useState(initialQuery);
+  const [genre, setGenre] = React.useState<string>(initialGenre);
+  const [debouncedQuery, setDebouncedQuery] = React.useState(initialQuery);
+  const [view, setView] = React.useState<"grid" | "list">("grid");
+  
   const [results, setResults] = React.useState<Movie[]>([]);
+  const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [total, setTotal] = React.useState<number>(0);
   const [nextOffset, setNextOffset] = React.useState<number | null>(null);
   const [usedFallback, setUsedFallback] = React.useState<boolean>(false);
-  const [view, setView] = React.useState<"grid" | "list">("grid");
+  
+  const [randomMovie, setRandomMovie] = React.useState<Movie | null>(null);
+  const [isRandomModalOpen, setIsRandomModalOpen] = React.useState(false);
+  
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const hasSearchedRef = React.useRef(false);
 
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const abortRef = React.useRef<AbortController | null>(null);
-
-
-  // Rotating animated hint
-  const HINTS = React.useMemo(
-    () => [
-      "Discover movies where your favorite actors worked together",
-      "Search by mood, vibe or a film you loved",
-      "Try: 'space horror', 'courtroom drama', 'classic noir'",
-    ],
-    []
-  );
-  const [hintIndex, setHintIndex] = React.useState(0);
+  // Debounce query input
   React.useEffect(() => {
-    const id = setInterval(() => setHintIndex((i) => (i + 1) % HINTS.length), 3000);
-    return () => clearInterval(id);
-  }, [HINTS]);
-  const [isSearchFocused, setIsSearchFocused] = React.useState(false);
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-  const syncUrl = React.useCallback((next: { q?: string; genre?: string }) => {
-    const url = new URL(window.location.href);
-    if (next.q !== undefined) {
-      if (next.q) url.searchParams.set("q", next.q);
-      else url.searchParams.delete("q");
-    }
-    if (next.genre !== undefined) {
-      if (next.genre) url.searchParams.set("genre", next.genre);
-      else url.searchParams.delete("genre");
-    }
-    window.history.replaceState(null, "", url.toString());
+  // Build cache key
+  const getCacheKey = React.useCallback((q: string, g: string, offset: number) => {
+    return `${q}::${g}::${offset}`;
   }, []);
 
-  function buildApiUrl(args: { q?: string; genre?: string; limit?: number; offset?: number }) {
-    const url = new URL(`/api/search`, window.location.origin);
-    if (args.q) url.searchParams.set("q", args.q);
-    if (args.genre) url.searchParams.set("genre", args.genre);
-    url.searchParams.set("limit", String(args.limit ?? PAGE_SIZE));
-    url.searchParams.set("offset", String(args.offset ?? 0));
-    return url.toString();
-  }
+  // Search function with caching
+  const performSearch = React.useCallback(async (
+    searchQuery: string,
+    searchGenre: string,
+    offset: number = 0,
+    reset: boolean = true
+  ) => {
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const runSearchRef = React.useRef<((args: { q?: string; genre?: string; offset: number; reset: boolean }) => Promise<void>) | null>(null);
+    const cacheKey = getCacheKey(searchQuery, searchGenre, offset);
+    const cached = searchCache.get(cacheKey);
+    
+    // Check cache
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      const data = cached.data;
+      setResults(prev => reset ? data.items : [...prev, ...data.items]);
+      setTotal(data.total);
+      setNextOffset(data.nextOffset);
+      setUsedFallback(data.source === "fallback");
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
-  const runSearch = React.useCallback(async (args: { q?: string; genre?: string; offset: number; reset: boolean }) => {
-    const { q: qArg, genre: gArg, offset, reset } = args;
-    setError(null);
-    setLoading(true);
-    abortRef.current?.abort();
+    // Create new abort controller
     const ac = new AbortController();
-    abortRef.current = ac;
+    abortControllerRef.current = ac;
+
+    setLoading(true);
+    setError(null);
 
     try {
-      const url = buildApiUrl({ q: qArg?.trim(), genre: gArg, limit: PAGE_SIZE, offset });
-      const res = await fetch(url, { method: "GET", cache: "no-store", signal: ac.signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const url = new URL("/api/search", window.location.origin);
+      if (searchQuery) url.searchParams.set("q", searchQuery);
+      if (searchGenre) url.searchParams.set("genre", searchGenre);
+      url.searchParams.set("limit", String(PAGE_SIZE));
+      url.searchParams.set("offset", String(offset));
 
-      const data = (await res.json()) as ApiResponse | { items?: Movie[] };
-      const items = "items" in data && Array.isArray(data.items) ? data.items : [];
-      const apiTotal = "total" in data && typeof data.total === "number" ? data.total : items.length;
-      const apiNext = "nextOffset" in data ? (data.nextOffset as number | null) : null;
-      const apiSource = "source" in data ? (data.source as "index" | "fallback" | undefined) : undefined;
+      const res = await fetch(url.toString(), {
+        method: "GET",
+        signal: ac.signal,
+        cache: "force-cache", // Use cache for same requests
+      });
 
-      setResults((prev) => (reset ? items : [...prev, ...items]));
-      setTotal(apiTotal);
-      setNextOffset(apiNext);
-      setUsedFallback(apiSource === "fallback");
-      syncUrl({ q: qArg, genre: gArg });
-    } catch (e: unknown) {
-      if ((e as any)?.name === "AbortError") return;
-      setError(e instanceof Error ? e.message : "Something went wrong.");
-      if (args.reset) {
+      if (ac.signal.aborted) return;
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = (await res.json()) as ApiResponse;
+
+      if (ac.signal.aborted) return;
+
+      // Cache the result
+      searchCache.set(cacheKey, { data, timestamp: Date.now() });
+
+      setResults(prev => reset ? data.items : [...prev, ...data.items]);
+      setTotal(data.total);
+      setNextOffset(data.nextOffset);
+      setUsedFallback(data.source === "fallback");
+
+      // Update URL without triggering navigation
+      const newUrl = new URL(window.location.href);
+      if (searchQuery) {
+        newUrl.searchParams.set("q", searchQuery);
+      } else {
+        newUrl.searchParams.delete("q");
+      }
+      if (searchGenre) {
+        newUrl.searchParams.set("genre", searchGenre);
+      } else {
+        newUrl.searchParams.delete("genre");
+      }
+      window.history.replaceState({}, "", newUrl.toString());
+
+    } catch (err: unknown) {
+      if ((err as any)?.name === "AbortError") return;
+      
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong";
+      setError(errorMessage);
+      
+      if (reset) {
         setResults([]);
         setTotal(0);
         setNextOffset(null);
       }
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) {
+        setLoading(false);
+      }
     }
-  }, [syncUrl]);
+  }, [getCacheKey]);
 
-  runSearchRef.current = runSearch;
+  // Track if we've done initial search
+  const isInitialMount = React.useRef(true);
 
+  // Initial search from URL params (only once on mount)
   React.useEffect(() => {
-    if (qFromUrl || genreFromUrl) {
-      void runSearch({ q: qFromUrl, genre: genreFromUrl, offset: 0, reset: true });
+    if (initialQuery || initialGenre) {
+      hasSearchedRef.current = true;
+      performSearch(initialQuery, initialGenre, 0, true);
     }
+    isInitialMount.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Only run once on mount
 
-  const [debouncedQ, setDebouncedQ] = React.useState(q);
+  // Search when debounced query or genre changes (but not on initial mount)
   React.useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q.trim()), DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [q]);
-
-  React.useEffect(() => {
-    if (!debouncedQ && !genre) return;
-    if (runSearchRef.current) {
-      void runSearchRef.current({ q: debouncedQ, genre, offset: 0, reset: true });
+    // Skip initial mount - handled by the effect above
+    if (isInitialMount.current) {
+      return;
     }
-  }, [debouncedQ, genre]);
 
-  // Keyboard shortcuts: "/" to focus, Esc clears query
+    // Search if there's a query OR a genre selected
+    if (debouncedQuery || genre) {
+      hasSearchedRef.current = true;
+      performSearch(debouncedQuery, genre, 0, true);
+    } else if (hasSearchedRef.current) {
+      // Clear results if both are empty and we've searched before
+      setResults([]);
+      setTotal(0);
+      setNextOffset(null);
+      setError(null);
+      hasSearchedRef.current = false;
+    }
+  }, [debouncedQuery, genre, performSearch]);
+
+  // Cleanup on unmount
   React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      } else if (e.key === "Escape") {
-        setQ("");
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const handleSubmit = React.useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    void runSearch({ q: q.trim(), genre, offset: 0, reset: true });
-  };
+    performSearch(query.trim(), genre, 0, true);
+  }, [query, genre, performSearch]);
 
-  const applyFilters = () => {
-    void runSearch({ q: q.trim(), genre, offset: 0, reset: true });
-  };
-
-  const clearFilters = () => {
-    setQ("");
+  const handleClear = React.useCallback(() => {
+    setQuery("");
     setGenre("");
     setResults([]);
     setTotal(0);
     setNextOffset(null);
-    syncUrl({ q: "", genre: "" });
-  };
-
-  const loadMore = () => {
-    if (nextOffset == null) return;
-    void runSearch({ q: q.trim(), genre, offset: nextOffset, reset: false });
-  };
-
-  // ===== Actor Pair Finder =====
-  const [actorA, setActorA] = React.useState("");
-  const [actorB, setActorB] = React.useState("");
-  const submitPair = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!actorA.trim() || !actorB.trim()) return;
-    const params = new URLSearchParams();
-    params.set("a", actorA.trim());
-    params.set("b", actorB.trim());
-    router.push(`/pair?${params.toString()}`);
-  };
-
-  const handleUpdate = React.useCallback(() => {
-    // Refresh can be handled by parent components if needed
+    setError(null);
+    hasSearchedRef.current = false;
+    
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete("q");
+    newUrl.searchParams.delete("genre");
+    window.history.replaceState({}, "", newUrl.toString());
   }, []);
 
-  const ResultCard = ({ m }: { m: Movie }) => {
-    const [isModalOpen, setIsModalOpen] = React.useState(false);
-    
-    return (
-      <>
-        <article
-          className="overflow-hidden rounded-xl border border-white/10 bg-white/5 group cursor-pointer"
-          aria-label={m.title}
-          onClick={() => setIsModalOpen(true)}
-        >
-          <div className="relative">
-            <Poster title={m.title} year={m.year} poster={m.poster ?? null} ratio="16/9" className="w-full" />
-            <div 
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MovieInteraction
-                movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
-                onUpdate={handleUpdate}
-              />
-            </div>
-          </div>
-          <div className="p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium" title={m.title}>{m.title}</div>
-                <div className="text-xs text-neutral-400">
-                  {[m.year, m.meta].filter(Boolean).join("•") || "—"}
-                </div>
-              </div>
-            </div>
-          </div>
-        </article>
-        <MovieDetailsModal
-          movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onUpdate={handleUpdate}
-        />
-      </>
-    );
-  };
+  const handleLoadMore = React.useCallback(() => {
+    if (nextOffset !== null && !loading) {
+      performSearch(debouncedQuery, genre, nextOffset, false);
+    }
+  }, [nextOffset, loading, debouncedQuery, genre, performSearch]);
 
-  const ResultRow = ({ m }: { m: Movie }) => {
-    const [isModalOpen, setIsModalOpen] = React.useState(false);
-    
-    return (
-      <>
-        <article
-          className="flex gap-3 rounded-xl border border-white/10 bg-white/5 p-2 group cursor-pointer"
-          aria-label={m.title}
-          onClick={() => setIsModalOpen(true)}
-        >
-          <Poster
-            title={m.title}
-            year={m.year}
-            poster={m.poster ?? null}
-            ratio="16/9"
-            className="relative h-20 w-36 shrink-0 overflow-hidden rounded-md bg-white/5"
-          />
-          <div className="flex w-full items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium" title={m.title}>{m.title}</div>
-              <div className="text-xs text-neutral-400">
-                {[m.year, m.meta].filter(Boolean).join("•") || "—"}
-              </div>
-            </div>
-            <div 
-              className="opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MovieInteraction
-                movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
-                onUpdate={handleUpdate}
-              />
-            </div>
-          </div>
-        </article>
-        <MovieDetailsModal
-          movie={{ id: m.id, title: m.title, year: m.year, poster: m.poster ?? null, meta: m.meta }}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onUpdate={handleUpdate}
-        />
-      </>
-    );
-  };
+  const handleRandom = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/movie/random");
+      if (!res.ok) throw new Error("Failed to get random movie");
+      const movie = await res.json();
+      setRandomMovie(movie);
+      setIsRandomModalOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to get random movie");
+    }
+  }, []);
 
-  const Skeleton = () => (
-    <div className="animate-pulse overflow-hidden rounded-xl border border-white/10 bg-white/5">
-      <div className="aspect-[16/9] bg-white/10" />
-      <div className="p-3">
-        <div className="h-4 w-3/4 rounded bg-white/10" />
-        <div className="mt-2 h-3 w-1/3 rounded bg-white/10" />
-      </div>
-    </div>
-  );
+  const handleUpdate = React.useCallback(() => {
+    // No-op for now
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-neutral-100">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        {/* Header with Home button */}
-        <header className="mb-4 flex items-center justify-between">
-          <Link href="/home" aria-label="Go to Home">
+        {/* Header */}
+        <header className="mb-6 flex items-center justify-between">
+          <Link href="/" aria-label="Go to Home">
             <Button type="button" className="bg-white/10 hover:bg-white/15 text-neutral-200">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Home
@@ -330,18 +278,33 @@ export default function SearchPage() {
           </Link>
           <h1 className="text-2xl font-semibold">Search</h1>
           <div className="flex items-center gap-3">
-            <Link href="/profile" className="text-sm text-neutral-300 hover:text-white">Profile</Link>
-            <Link href="/logout" className="text-sm text-neutral-300 hover:text-white">Logout</Link>
+            <Link href="/profile" className="text-sm text-neutral-300 hover:text-white">
+              Profile
+            </Link>
+            <Link href="/logout" className="text-sm text-neutral-300 hover:text-white">
+              Logout
+            </Link>
           </div>
         </header>
 
-        {/* Controls */}
-        <form onSubmit={onSubmit} className="mt-2 grid gap-2 sm:grid-cols-[200px_1fr_auto_auto]">
-          {/* Genre */}
-          <div className="flex">
-            <label className="sr-only" htmlFor="genre">Genre</label>
-            <Select value={genre || "all"} onValueChange={(v) => setGenre(v === "all" ? "" : v)}>
-              <SelectTrigger id="genre" className="bg-white/5 border-white/10">
+        {/* Search Form */}
+        <form onSubmit={handleSubmit} className="mb-6 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-[200px_1fr_auto]">
+            {/* Genre Filter */}
+            <Select
+              value={genre || "all"}
+              onValueChange={(v) => {
+                const newGenre = v === "all" ? "" : v;
+                setGenre(newGenre);
+                // Immediately trigger search when genre changes
+                if (newGenre) {
+                  performSearch(query.trim(), newGenre, 0, true);
+                } else {
+                  performSearch(query.trim(), "", 0, true);
+                }
+              }}
+            >
+              <SelectTrigger className="bg-white/5 border-white/10">
                 <SelectValue placeholder="All genres" />
               </SelectTrigger>
               <SelectContent className="bg-[#1a1a1a] text-neutral-100">
@@ -351,9 +314,48 @@ export default function SearchPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by title, mood, or vibe..."
+                className="bg-white/5 pl-9 border-white/10 focus-visible:ring-emerald-400"
+                aria-label="Search movies"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              <Button
+                type="submit"
+                className="bg-emerald-400 text-black hover:bg-emerald-300"
+                disabled={loading}
+              >
+                {loading ? "Searching…" : "Search"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleRandom}
+                className="bg-purple-500 hover:bg-purple-600 text-white"
+                title="Get a random movie"
+              >
+                <Shuffle className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                onClick={handleClear}
+                className="bg-white/10 hover:bg-white/15 text-neutral-200"
+                disabled={loading && results.length === 0}
+              >
+                Clear
+              </Button>
+            </div>
           </div>
 
-          {/* View toggle */}
+          {/* View Toggle */}
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -372,123 +374,157 @@ export default function SearchPage() {
               List
             </Button>
           </div>
-
-          {/* Search input with animated hint */}
-          <div className="relative grow">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-            <Input
-              ref={searchInputRef}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder=""
-              className="bg-white/5 pl-9 border-white/10 focus-visible:ring-emerald-400"
-              aria-label="Search movies"
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  applyFilters();
-                }
-              }}
-            />
-            {q.length === 0 && (
-              <div className="pointer-events-none absolute left-9 right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500" aria-hidden="true">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={hintIndex}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.25 }}
-                    className={isSearchFocused ? "opacity-60" : ""}
-                  >
-                    {HINTS[hintIndex]}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <Button type="submit" className="bg-emerald-400 text-black hover:bg-emerald-300" disabled={loading}>
-              {loading ? "Searching…" : "Search"}
-            </Button>
-            <Button type="button" onClick={clearFilters} className="bg-white/10 hover:bg-white/15 text-neutral-200" disabled={loading && results.length === 0}>
-              Clear
-            </Button>
-          </div>
         </form>
 
-        {/* ===== Actor Pair Finder (inline) ===== */}
-        <form onSubmit={submitPair} className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-          <Input
-            value={actorA}
-            onChange={(e) => setActorA(e.target.value)}
-            placeholder="Actor A (e.g., Robert Downey Jr.)"
-            className="bg-white/5 border-white/10"
-            aria-label="Actor A"
-          />
-          <Input
-            value={actorB}
-            onChange={(e) => setActorB(e.target.value)}
-            placeholder="Actor B (e.g., Chris Evans)"
-            className="bg-white/5 border-white/10"
-            aria-label="Actor B"
-          />
-          <Button type="submit" className="bg-white/10 hover:bg-white/15 text-neutral-200">
-            Find Pair
-          </Button>
-        </form>
+        {/* Status */}
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
 
-        {/* Status / Errors */}
-        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <p className="text-sm text-neutral-400">
-            {results.length}{total ? ` of ${total}` : ""} result{(total || results.length) > 1 ? "s" : ""} found
-            {genre ? ` • Genre: ${genre}` : ""}
-          </p>
-          {usedFallback && (
-            <span className="text-xs text-amber-300">
-              Using starter dataset. Add <code>src/data/movies.index.json</code> for full results.
-            </span>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          {loading ? (
+            <p className="text-sm text-neutral-400">Searching...</p>
+          ) : (
+            <>
+              <p className="text-sm text-neutral-400">
+                {total > 0 ? (
+                  <>
+                    {results.length}{total ? ` of ${total}` : ""} result{(total || results.length) > 1 ? "s" : ""} found
+                    {genre && ` • Genre: ${genre}`}
+                  </>
+                ) : genre ? (
+                  <>
+                    No results found for genre: <span className="text-emerald-400">{genre}</span>
+                    <span className="text-xs text-neutral-500 ml-2">(Try a different genre or search by title)</span>
+                  </>
+                ) : query ? (
+                  "No results found. Try a different search."
+                ) : (
+                  "Enter a search query or select a genre to get started."
+                )}
+              </p>
+              {usedFallback && (
+                <span className="text-xs text-amber-300">
+                  Using starter dataset
+                </span>
+              )}
+            </>
           )}
         </div>
 
         {/* Results */}
-        <section className="mt-4">
+        <section>
           {loading && results.length === 0 ? (
-            <div className={view === "grid" ? "grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid gap-3"}>
-              {Array.from({ length: 8 }).map((_, i) => (<Skeleton key={i} />))}
+            <div className={view === "grid" 
+              ? "grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              : "grid gap-3"
+            }>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-xl border border-white/10 bg-white/5">
+                  <div className={view === "grid" ? "aspect-[2/3] bg-white/10" : "h-20 bg-white/10"} />
+                  <div className="p-3">
+                    <div className="h-4 w-3/4 rounded bg-white/10 mb-2" />
+                    <div className="h-3 w-1/2 rounded bg-white/10" />
+                  </div>
+                </div>
+              ))}
             </div>
-          ) : results.length === 0 ? (
-            <p className="mt-8 text-neutral-400">
-              {qFromUrl || genreFromUrl ? "No results found." : "Type a query to get started."}
-            </p>
+          ) : results.length === 0 && !loading ? (
+            <div className="py-12 text-center">
+              <p className="text-neutral-400 mb-2">
+                {genre && !query 
+                  ? `No movies found with genre "${genre}". The movie database may not have genre information populated. Try searching by title instead.`
+                  : query && genre
+                  ? `No results found for "${query}" in genre "${genre}". Try a different search or genre.`
+                  : query
+                  ? `No results found for "${query}". Try a different search.`
+                  : "Enter a search query or select a genre to get started."
+                }
+              </p>
+              {genre && (
+                <Button
+                  onClick={() => {
+                    setGenre("");
+                    setQuery("");
+                    handleClear();
+                  }}
+                  className="mt-4 bg-emerald-400 text-black hover:bg-emerald-300"
+                >
+                  Clear filters and show all movies
+                </Button>
+              )}
+            </div>
           ) : view === "grid" ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {results.map((m) => (<ResultCard key={m.id ?? `${m.title}-${m.year ?? ""}`} m={m} />))}
+              {results.map((movie) => (
+                <MovieCard
+                  key={movie.id || `${movie.title}-${movie.year}`}
+                  id={movie.id}
+                  title={movie.title}
+                  year={movie.year}
+                  poster={movie.poster}
+                  meta={movie.meta}
+                  showInteraction={true}
+                  onUpdate={handleUpdate}
+                />
+              ))}
             </div>
           ) : (
             <div className="grid gap-3">
-              {results.map((m) => (<ResultRow key={m.id ?? `${m.title}-${m.year ?? ""}`} m={m} />))}
+              {results.map((movie) => (
+                <div
+                  key={movie.id || `${movie.title}-${movie.year}`}
+                  className="flex gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                >
+                  <MovieCard
+                    id={movie.id}
+                    title={movie.title}
+                    year={movie.year}
+                    poster={movie.poster}
+                    meta={movie.meta}
+                    showInteraction={true}
+                    onUpdate={handleUpdate}
+                  />
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Load more */}
-          {nextOffset !== null && (
+          {/* Load More */}
+          {nextOffset !== null && !loading && (
             <div className="mt-6 flex justify-center">
-              <Button type="button" onClick={loadMore} disabled={loading} className="bg-white/10 hover:bg-white/15 text-neutral-200">
-                {loading ? "Loading…" : "Load more"}
+              <Button
+                type="button"
+                onClick={handleLoadMore}
+                className="bg-white/10 hover:bg-white/15 text-neutral-200"
+              >
+                Load more
               </Button>
             </div>
           )}
         </section>
-
       </div>
+
+      {/* Random Movie Modal */}
+      {randomMovie && (
+        <MovieDetailsModal
+          movie={{
+            id: randomMovie.id,
+            title: randomMovie.title,
+            year: randomMovie.year,
+            poster: randomMovie.poster ?? null,
+            meta: randomMovie.meta,
+          }}
+          isOpen={isRandomModalOpen}
+          onClose={() => {
+            setIsRandomModalOpen(false);
+            setRandomMovie(null);
+          }}
+          onUpdate={handleUpdate}
+        />
+      )}
     </main>
   );
 }
-

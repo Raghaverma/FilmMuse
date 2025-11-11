@@ -178,12 +178,26 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
                       src={details.poster}
                       alt={details.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Suppress 404 errors in console
+                        const img = e.currentTarget;
+                        img.style.display = 'none';
+                        // Show fallback by triggering parent to show placeholder
+                        const parent = img.parentElement;
+                        if (parent) {
+                          const fallback = parent.querySelector('.poster-fallback') as HTMLElement;
+                          if (fallback) {
+                            fallback.style.display = 'flex';
+                          }
+                        }
+                      }}
+                      loading="lazy"
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-emerald-900/20 to-neutral-900 flex items-center justify-center">
-                      <Film className="h-24 w-24 text-neutral-600" />
-                    </div>
-                  )}
+                  ) : null}
+                  {/* Fallback placeholder - shown when image fails to load */}
+                  <div className="poster-fallback absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-900/20 to-neutral-900 flex items-center justify-center" style={{ display: details.poster ? 'none' : 'flex' }}>
+                    <Film className="h-24 w-24 text-neutral-600" />
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
                   
                   {/* Title and Basic Info */}

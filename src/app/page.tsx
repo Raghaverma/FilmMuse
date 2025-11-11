@@ -12,7 +12,8 @@ import {
   Star,
   Search,
 } from "lucide-react";
-import { getCurrentUser, login, signup } from "@/lib/auth-client";
+import { getCurrentUser, login, signup, getUserWatchlist } from "@/lib/auth-client";
+import MovieCard from "@/components/MovieCard";
 import {
   Dialog,
   DialogContent,
@@ -226,14 +227,14 @@ function Hero() {
             Find the perfect film for your mood.
           </motion.h1>
           <p className="mt-4 max-w-2xl text-neutral-400">
-            FilmMuse learns what you like and curates watchlists, trailers, and hidden
+            FilmMuse learns what you like and curates watchlists and hidden
             gems — all without the endless scroll.
           </p>
           <div className="mt-8 w-full max-w-xl">
             <SearchBar />
           </div>
-          <div className="mt-10 grid grid-cols-2 gap-3 text-xs text-neutral-400 sm:grid-cols-4">
-            {["Mood graphs", "Trailer snapshots", "Smart lists", "Spoiler-free synopses"].map(
+          <div className="mt-10 grid grid-cols-2 gap-3 text-xs text-neutral-400 sm:grid-cols-3">
+            {["Mood graphs", "Smart lists", "Spoiler-free synopses"].map(
               (t) => (
                 <div
                   key={t}
@@ -451,57 +452,192 @@ function TrustBar() {
   );
 }
 
-/* Discover */
+/* Discover - Recommendations */
 function SectionDiscover() {
+  const [personalizedRecs, setPersonalizedRecs] = React.useState<Array<{ id: string; title: string; year?: number; meta?: string; poster?: string | null }>>([]);
+  const [randomRecs, setRandomRecs] = React.useState<Array<{ id: string; title: string; year?: number; meta?: string; poster?: string | null }>>([]);
+  const [loadingPersonalized, setLoadingPersonalized] = React.useState(true);
+  const [loadingRandom, setLoadingRandom] = React.useState(true);
+
+  React.useEffect(() => {
+    // Load personalized recommendations
+    const loadPersonalized = async () => {
+      try {
+        const watchlist = getUserWatchlist();
+        const res = await fetch("/api/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            watchlist: watchlist.watchlist,
+            liked: watchlist.liked,
+          }),
+        });
+        const data = await res.json();
+        setPersonalizedRecs(data.items || []);
+      } catch (error) {
+        console.error("Failed to load personalized recommendations:", error);
+      } finally {
+        setLoadingPersonalized(false);
+      }
+    };
+
+    // Load random recommendations
+    const loadRandom = async () => {
+      try {
+        const res = await fetch("/api/recommendations/random");
+        const data = await res.json();
+        setRandomRecs(data.items || []);
+      } catch (error) {
+        console.error("Failed to load random recommendations:", error);
+      } finally {
+        setLoadingRandom(false);
+      }
+    };
+
+    loadPersonalized();
+    loadRandom();
+  }, []);
+
+  const handleUpdate = React.useCallback(() => {
+    // Reload recommendations when watchlist/liked changes
+    const loadPersonalized = async () => {
+      try {
+        const watchlist = getUserWatchlist();
+        const res = await fetch("/api/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            watchlist: watchlist.watchlist,
+            liked: watchlist.liked,
+          }),
+        });
+        const data = await res.json();
+        setPersonalizedRecs(data.items || []);
+      } catch (error) {
+        console.error("Failed to reload recommendations:", error);
+      }
+    };
+    loadPersonalized();
+  }, []);
+
   return (
     <section id="discover" className="relative" aria-labelledby="discover-title">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 id="discover-title" className="text-xl font-semibold text-neutral-200">
-            Today&apos;s curated lineup
-          </h2>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {FILMS.map((f, idx) => (
-            <article
-              key={f.id}
-              className="group overflow-hidden rounded-xl border border-white/10 bg-white/5"
-              aria-label={`${f.title} (${f.year})`}
-            >
-              <div className="relative w-full overflow-hidden rounded-b-none">
-                <div className="relative aspect-[16/9] w-full">
-                  <Image
-                    src={f.poster}
-                    alt={`${f.title} banner`}
-                    fill
-                    priority={idx < 2}
-                    sizes="(max-width: 768px) 100vw, (max-width:1280px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    onError={(e) => {
-                      (e.currentTarget as unknown as HTMLImageElement).style.display =
-                        "none";
-                    }}
+        {/* Personalized Recommendations */}
+        {personalizedRecs.length > 0 && (
+          <div className="mb-12">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 id="discover-title" className="text-xl font-semibold text-neutral-200 mb-2">
+                  Recommended for You
+                </h2>
+                <p className="text-sm text-neutral-400">
+                  Based on your watchlist and liked movies
+                </p>
+              </div>
+            </div>
+            {loadingPersonalized ? (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="animate-pulse rounded-2xl bg-white/5 aspect-[2/3]" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {personalizedRecs.slice(0, 8).map((movie) => (
+                  <MovieCard
+                    key={movie.id}
+                    id={movie.id}
+                    title={movie.title}
+                    year={movie.year}
+                    poster={movie.poster}
+                    meta={movie.meta}
+                    showInteraction={true}
+                    onUpdate={handleUpdate}
                   />
-                  <div className="absolute inset-0 hidden bg-gradient-to-t from-black/60 via-black/10 to-transparent group-hover:opacity-90 sm:block" />
-                  <div className="absolute inset-0 sm:hidden bg-[radial-gradient(circle_at_60%_40%,rgba(16,185,129,.15),transparent_50%)]" />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 z-[1] p-3">
-                  <div className="text-sm font-medium text-neutral-100 drop-shadow">
-                    {f.title}
-                  </div>
-                  <div className="text-xs text-neutral-300/90 drop-shadow">
-                    {f.year} • {f.meta}
-                  </div>
-                </div>
+                ))}
               </div>
-              <div className="p-3">
-                <div className="flex items-center gap-2 text-xs text-neutral-400">
-                  <Star className="h-4 w-4 text-neutral-500" /> Curated for your vibe
-                </div>
-              </div>
-            </article>
-          ))}
+            )}
+          </div>
+        )}
+
+        {/* Random Recommendations */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-neutral-200 mb-2">
+              {personalizedRecs.length > 0 ? "Discover New Movies" : "Today's curated lineup"}
+            </h2>
+            <p className="text-sm text-neutral-400">
+              {personalizedRecs.length > 0 
+                ? "Random recommendations from our collection"
+                : "Handpicked films for your viewing pleasure"}
+            </p>
+          </div>
         </div>
+        {loadingRandom ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse rounded-2xl bg-white/5 aspect-[2/3]" />
+            ))}
+          </div>
+        ) : randomRecs.length > 0 ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {randomRecs.slice(0, 8).map((movie) => (
+              <MovieCard
+                key={movie.id}
+                id={movie.id}
+                title={movie.title}
+                year={movie.year}
+                poster={movie.poster}
+                meta={movie.meta}
+                showInteraction={true}
+                onUpdate={handleUpdate}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {FILMS.map((f, idx) => (
+              <article
+                key={f.id}
+                className="group overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                aria-label={`${f.title} (${f.year})`}
+              >
+                <div className="relative w-full overflow-hidden rounded-b-none">
+                  <div className="relative aspect-[16/9] w-full">
+                    <Image
+                      src={f.poster}
+                      alt={`${f.title} banner`}
+                      fill
+                      priority={idx < 2}
+                      sizes="(max-width: 768px) 100vw, (max-width:1280px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      onError={(e) => {
+                        (e.currentTarget as unknown as HTMLImageElement).style.display =
+                          "none";
+                      }}
+                    />
+                    <div className="absolute inset-0 hidden bg-gradient-to-t from-black/60 via-black/10 to-transparent group-hover:opacity-90 sm:block" />
+                    <div className="absolute inset-0 sm:hidden bg-[radial-gradient(circle_at_60%_40%,rgba(16,185,129,.15),transparent_50%)]" />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 z-[1] p-3">
+                    <div className="text-sm font-medium text-neutral-100 drop-shadow">
+                      {f.title}
+                    </div>
+                    <div className="text-xs text-neutral-300/90 drop-shadow">
+                      {f.year} • {f.meta}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3">
+                  <div className="flex items-center gap-2 text-xs text-neutral-400">
+                    <Star className="h-4 w-4 text-neutral-500" /> Curated for your vibe
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

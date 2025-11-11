@@ -41,7 +41,7 @@ export default function AccountPage() {
         <header className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Account</h1>
           <nav className="flex items-center gap-3 text-sm text-neutral-300">
-            <Link href="/home" className="hover:text-white">Home</Link>
+            <Link href="/" className="hover:text-white">Home</Link>
             <Link href="/logout" className="hover:text-white">Logout</Link>
           </nav>
         </header>

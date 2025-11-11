@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/home", "/account", "/profile"];
+const PROTECTED_PREFIXES = ["/account", "/profile"];
 const PUBLIC_AUTH_PATHS = new Set(["/login", "/signup"]);
 
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const isAuthed = req.cookies.get("auth")?.value === "1";
+
+  // Redirect /home to root
+  if (pathname === "/home" || pathname.startsWith("/home/")) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
 
   // Allow root path for everyone - it shows home page content with conditional auth UI
   if (pathname === "/") {

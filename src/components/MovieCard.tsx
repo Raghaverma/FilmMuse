@@ -11,11 +11,12 @@ type Props = {
   title: string;
   year?: number;
   poster?: string | null;
+  meta?: string;
   showInteraction?: boolean;
   onUpdate?: () => void;
 };
 
-export default function MovieCard({ id, title, year, poster, showInteraction = false, onUpdate }: Props) {
+export default function MovieCard({ id, title, year, poster, meta, showInteraction = false, onUpdate }: Props) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [src, setSrc] = React.useState<string | null>(poster ?? null);
   const [loading, setLoading] = React.useState<boolean>(!poster);
@@ -76,7 +77,16 @@ export default function MovieCard({ id, title, year, poster, showInteraction = f
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            onError={() => setSrc(null)}
+            onError={(e) => {
+              // Suppress 404 errors in console
+              const img = e.currentTarget;
+              if (img.src && !img.src.includes('data:')) {
+                // Only log if it's not already a placeholder
+                console.debug(`Poster not available for: ${title}`);
+              }
+              setSrc(null);
+            }}
+            loading="lazy"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-neutral-500 bg-white/5">
@@ -94,7 +104,7 @@ export default function MovieCard({ id, title, year, poster, showInteraction = f
             onClick={(e) => e.stopPropagation()}
           >
             <MovieInteraction
-              movie={{ id, title, year, poster }}
+              movie={{ id, title, year, poster, meta }}
               onUpdate={() => {
                 const ratings = getUserRatings();
                 setUserRating(ratings[id]?.rating || 0);
@@ -121,7 +131,7 @@ export default function MovieCard({ id, title, year, poster, showInteraction = f
       </motion.div>
 
       <MovieDetailsModal
-        movie={{ id, title, year, poster }}
+        movie={{ id, title, year, poster, meta }}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onUpdate={onUpdate}

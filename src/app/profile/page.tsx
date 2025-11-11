@@ -20,6 +20,7 @@ import {
   type Activity,
 } from "@/lib/auth-client";
 import MovieCard from "@/components/MovieCard";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -44,6 +45,7 @@ export default function ProfilePage() {
   const [showCreateListDialog, setShowCreateListDialog] = React.useState(false);
   const [editingList, setEditingList] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [deleteConfirm, setDeleteConfirm] = React.useState<{ isOpen: boolean; listId: string | null; listName: string }>({ isOpen: false, listId: null, listName: "" });
   const hasCheckedAuth = React.useRef(false);
   const hasRedirected = React.useRef(false);
 
@@ -105,10 +107,16 @@ export default function ProfilePage() {
     setEditingList(null);
   };
 
-  const handleDeleteList = (listId: string) => {
-    if (confirm("Are you sure you want to delete this list?")) {
-      deleteCustomList(listId);
+  const handleDeleteList = (listId: string, listName: string) => {
+    setDeleteConfirm({ isOpen: true, listId, listName });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm.listId) {
+      deleteCustomList(deleteConfirm.listId);
       refreshData();
+      setDeleteConfirm({ isOpen: false, listId: null, listName: "" });
+      toast.success("List deleted");
     }
   };
 
@@ -366,7 +374,7 @@ export default function ProfilePage() {
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteList(list.id)}
+                              onClick={() => handleDeleteList(list.id, list.name)}
                               className="p-2 hover:bg-red-500/20 rounded text-red-400"
                               title="Delete list"
                             >
@@ -537,6 +545,16 @@ export default function ProfilePage() {
           onUpdate={handleUpdateList}
         />
       )}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete List"
+        message={`Are you sure you want to delete "${deleteConfirm.listName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, listId: null, listName: "" })}
+        variant="danger"
+      />
     </motion.main>
   );
 }

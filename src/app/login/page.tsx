@@ -10,7 +10,7 @@ import { login } from "@/lib/auth-client";
 export default function LoginPage() {
   const router = useRouter();
   const sp = useSearchParams();
-  const nextUrl = sp.get("next") || "/home";
+  const nextUrl = sp.get("next") || "/";
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
