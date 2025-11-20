@@ -27,6 +27,25 @@ export interface MovieItem {
   poster?: string | null;
 }
 
+// Helper function to sanitize movie objects for Firestore
+// Firestore doesn't allow undefined values, so we convert them to null or remove them
+function sanitizeMovieItem(movie: MovieItem): MovieItem {
+  const sanitized: MovieItem = {
+    id: movie.id,
+    title: movie.title,
+  };
+  
+  // Only include year if it's defined and not null
+  if (movie.year !== undefined && movie.year !== null) {
+    sanitized.year = movie.year;
+  }
+  
+  // Always include poster, defaulting to null if undefined
+  sanitized.poster = movie.poster ?? null;
+  
+  return sanitized;
+}
+
 export interface CustomList {
   id: string;
   name: string;
@@ -56,14 +75,22 @@ export interface UserData {
   activity: any[];
 }
 
+// Helper to sanitize movie arrays (removes undefined values)
+function sanitizeMovieArray(movies: any[]): MovieItem[] {
+  if (!Array.isArray(movies)) return [];
+  return movies
+    .filter((m) => m && m.id && m.title) // Filter out invalid entries
+    .map((m) => sanitizeMovieItem(m));
+}
+
 // User Data Operations
 export async function getUserData(uid: string): Promise<UserData> {
   const userDataDoc = await getDoc(doc(db, "userData", uid));
   if (userDataDoc.exists()) {
     const data = userDataDoc.data();
     return {
-      watchlist: data.watchlist || [],
-      liked: data.liked || [],
+      watchlist: sanitizeMovieArray(data.watchlist || []),
+      liked: sanitizeMovieArray(data.liked || []),
       ratings: data.ratings || {},
       customLists: data.customLists || {},
       activity: data.activity || [],
@@ -96,7 +123,11 @@ export async function getUserCustomLists(uid?: string): Promise<CustomList[]> {
   const userId = uid || auth.currentUser?.uid;
   if (!userId) return [];
   const userData = await getUserData(userId);
-  return Object.values(userData.customLists);
+  // Sanitize movies in custom lists
+  return Object.values(userData.customLists).map((list) => ({
+    ...list,
+    movies: sanitizeMovieArray(list.movies || []),
+  }));
 }
 
 export async function getUserRatings(uid?: string): Promise<Record<string, MovieRating>> {
@@ -123,7 +154,8 @@ export async function addToWatchlist(movie: MovieItem): Promise<void> {
 
   const userData = await getUserData(user.uid);
   if (!userData.watchlist.some((m) => m.id === movie.id)) {
-    userData.watchlist.push(movie);
+    const sanitizedMovie = sanitizeMovieItem(movie);
+    userData.watchlist.push(sanitizedMovie);
     await updateUserData(user.uid, { watchlist: userData.watchlist });
   }
 }
@@ -143,7 +175,8 @@ export async function addToLiked(movie: MovieItem): Promise<void> {
 
   const userData = await getUserData(user.uid);
   if (!userData.liked.some((m) => m.id === movie.id)) {
-    userData.liked.push(movie);
+    const sanitizedMovie = sanitizeMovieItem(movie);
+    userData.liked.push(sanitizedMovie);
     await updateUserData(user.uid, { liked: userData.liked });
   }
 }
@@ -266,7 +299,8 @@ export async function addMovieToCustomList(
   }
 
   if (!list.movies.some((m) => m.id === movie.id)) {
-    list.movies.push(movie);
+    const sanitizedMovie = sanitizeMovieItem(movie);
+    list.movies.push(sanitizedMovie);
     list.updatedAt = Date.now();
     userData.customLists[listId] = list;
     await updateUserData(user.uid, { customLists: userData.customLists });
@@ -347,7 +381,11 @@ export async function getSharedLists(userId: string): Promise<CustomList[]> {
           list.sharedWith.includes(userId) ||
           list.ownerId === userId
         ) {
-          sharedLists.push(list);
+          // Sanitize movies in shared lists
+          sharedLists.push({
+            ...list,
+            movies: sanitizeMovieArray(list.movies || []),
+          });
         }
       });
     }

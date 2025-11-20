@@ -48,6 +48,8 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
   const [customLists, setCustomLists] = React.useState<Array<{ id: string; name: string; movies: MovieItem[] }>>([]);
   const [ratings, setRatings] = React.useState<Record<string, { rating: number }>>({});
   const menuRef = React.useRef<HTMLDivElement>(null);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const [menuPosition, setMenuPosition] = React.useState<{ top: number; right: number } | null>(null);
 
   React.useEffect(() => {
     if (!user) return;
@@ -69,10 +71,52 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
     loadData();
   }, [user]);
 
+  // Calculate menu position when opening
+  React.useEffect(() => {
+    if (isMenuOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 192; // w-48 = 12rem = 192px
+      const menuHeight = 200; // Approximate height
+      const padding = 8; // mt-2 = 8px
+      
+      let right = window.innerWidth - rect.right;
+      let top = rect.bottom + padding;
+      
+      // Adjust if menu would go off right edge
+      if (right < menuWidth) {
+        right = window.innerWidth - rect.left;
+      }
+      
+      // Adjust if menu would go off bottom edge
+      if (top + menuHeight > window.innerHeight) {
+        top = rect.top - menuHeight - padding;
+      }
+      
+      // Ensure menu doesn't go off left edge
+      if (right > window.innerWidth - menuWidth) {
+        right = window.innerWidth - menuWidth - padding;
+      }
+      
+      // Ensure menu doesn't go off top edge
+      if (top < padding) {
+        top = padding;
+      }
+      
+      setMenuPosition({ top, right });
+    } else {
+      setMenuPosition(null);
+    }
+  }, [isMenuOpen]);
+
   // Close menu when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsMenuOpen(false);
       }
     };
@@ -181,8 +225,9 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
 
   return (
     <>
-      <div ref={menuRef} className={`relative ${className}`}>
+      <div className={`relative ${className}`}>
         <button
+          ref={buttonRef}
           type="button"
           onClick={(e) => {
             e.preventDefault();
@@ -196,13 +241,18 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
         </button>
 
         <AnimatePresence>
-          {isMenuOpen && (
+          {isMenuOpen && menuPosition && (
             <motion.div
+              ref={menuRef}
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-white/10 bg-[#1a1a1a] shadow-xl z-50"
+              className="fixed w-48 rounded-lg border border-white/10 bg-[#1a1a1a] shadow-xl z-[9999]"
+              style={{
+                top: `${menuPosition.top}px`,
+                right: `${menuPosition.right}px`,
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-1">

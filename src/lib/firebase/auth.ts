@@ -28,42 +28,65 @@ export async function signupWithEmail(
   username: string
 ): Promise<User> {
   try {
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
+    
     // Create user with Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(
       auth,
-      email,
+      normalizedEmail,
       password
     );
     const user = userCredential.user;
 
     // Update display name
-    await updateProfile(user, { displayName: username });
+    try {
+      await updateProfile(user, { displayName: username.trim() });
+    } catch (profileError) {
+      console.warn("Failed to update display name:", profileError);
+      // Continue even if display name update fails
+    }
 
     // Create user profile in Firestore
     const userProfile: UserProfile = {
       uid: user.uid,
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       username: username.trim(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    await setDoc(doc(db, "users", user.uid), userProfile);
+    try {
+      await setDoc(doc(db, "users", user.uid), userProfile);
+    } catch (firestoreError) {
+      console.error("Failed to create user profile in Firestore:", firestoreError);
+      // Don't throw - user is created in Auth, profile can be created later
+    }
 
     // Initialize user data collections
-    await setDoc(doc(db, "userData", user.uid), {
-      watchlist: [],
-      liked: [],
-      ratings: {},
-      customLists: {},
-      activity: [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    try {
+      await setDoc(doc(db, "userData", user.uid), {
+        watchlist: [],
+        liked: [],
+        ratings: {},
+        customLists: {},
+        activity: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (firestoreError) {
+      console.error("Failed to initialize user data:", firestoreError);
+      // Don't throw - user is created, data can be initialized later
+    }
 
     return user;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create account");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to create account";
+    // Preserve Firebase error codes
+    if (errorMessage.includes("auth/")) {
+      throw new Error(errorMessage);
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -74,20 +97,26 @@ export async function loginWithEmail(
   try {
     const userCredential = await signInWithEmailAndPassword(
       auth,
-      email,
+      email.trim().toLowerCase(),
       password
     );
     return userCredential.user;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to sign in");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to sign in";
+    // Firebase error codes are in the format "auth/error-code"
+    if (errorMessage.includes("auth/invalid-credential") || errorMessage.includes("auth/user-not-found") || errorMessage.includes("auth/wrong-password")) {
+      throw new Error("auth/invalid-credential");
+    }
+    throw new Error(errorMessage);
   }
 }
 
 export async function logout(): Promise<void> {
   try {
     await signOut(auth);
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to sign out");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to sign out";
+    throw new Error(errorMessage);
   }
 }
 
@@ -146,8 +175,9 @@ export async function signInWithGoogle(): Promise<User> {
     }
 
     return user;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to sign in with Google");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to sign in with Google";
+    throw new Error(errorMessage);
   }
 }
 

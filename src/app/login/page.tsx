@@ -31,8 +31,8 @@ export default function LoginPage() {
   }, [user, router, nextUrl]);
 
   const getErrorMessage = (errorMessage: string): string => {
-    if (errorMessage.includes("user-not-found")) {
-      return "No account found with this email address.";
+    if (errorMessage.includes("user-not-found") || errorMessage.includes("invalid-credential")) {
+      return "Invalid email or password. Please check your credentials and try again.";
     }
     if (errorMessage.includes("wrong-password")) {
       return "Incorrect password. Please try again.";

@@ -1,9 +1,10 @@
 # FilmMuse 🎬
 
-A modern, intelligent movie discovery platform that learns your preferences and curates personalized recommendations. Built with Next.js, TypeScript, and Tailwind CSS.
+A modern, intelligent movie discovery platform that learns your preferences and curates personalized recommendations. Built with Next.js, TypeScript, Firebase, and Tailwind CSS.
 
 ![FilmMuse](https://img.shields.io/badge/Next.js-15.5-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
+![Firebase](https://img.shields.io/badge/Firebase-12.6-orange?style=for-the-badge&logo=firebase)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-38bdf8?style=for-the-badge&logo=tailwind-css)
 
 ## ✨ Features
@@ -30,10 +31,14 @@ A modern, intelligent movie discovery platform that learns your preferences and 
 - **Custom Lists**: Create and manage custom movie lists
 - **Rating System**: Rate movies with a 5-star system
 
-### 👤 User Profiles
+### 👤 User Profiles & Social Features
 - **Personal Dashboard**: Track your watchlist, liked movies, and ratings
-- **Activity History**: View your movie-related activities
+- **User Accounts**: Secure authentication with Firebase (email/password and Google Sign-In)
+- **User Profiles**: View and manage your profile with username and email
+- **Follow System**: Follow other users and see their movie preferences
+- **List Sharing**: Share your custom lists with specific users or make them public
 - **Custom Lists**: Create and manage personalized movie collections
+- **Activity History**: Track your movie-related activities
 
 ### 🎭 Beautiful UI/UX
 - **Dark Theme**: Modern dark interface with emerald accents
@@ -62,14 +67,38 @@ A modern, intelligent movie discovery platform that learns your preferences and 
    pnpm install
    ```
 
-3. **Set up environment variables**
+3. **Set up Firebase**
+   
+   Follow the complete setup guide in [`FIREBASE_SETUP.md`](./FIREBASE_SETUP.md) or:
+   
+   a. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+   
+   b. Enable Authentication (Email/Password and Google)
+   
+   c. Create a Firestore database
+   
+   d. Copy `env.template` to `.env.local`:
    ```bash
-   cp .env.example .env
+   cp env.template .env.local
    ```
    
-   Add your OMDb API key (optional, for movie details):
+   e. Add your Firebase configuration to `.env.local`:
    ```env
-   OMDB_API_KEY=your_api_key_here
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   
+   # Optional: OMDb API key for movie details
+   OMDB_API_KEY=your_omdb_api_key
+   
+   # Optional: Firebase Admin SDK (for server-side API routes)
+   FIREBASE_PROJECT_ID=your_project_id
+   FIREBASE_CLIENT_EMAIL=your_service_account_email
+   FIREBASE_PRIVATE_KEY="your_private_key"
    ```
 
 4. **Prepare data** (if needed)
@@ -103,20 +132,26 @@ FilmMuse/
 │   │   │   │   ├── route.ts          # POST /api/recommendations (optimized algorithm)
 │   │   │   │   └── random/           # GET /api/recommendations/random
 │   │   │   ├── search/               # GET /api/search (optimized search)
-│   │   │   └── poster/               # GET /api/poster (OMDb poster fetching)
+│   │   │   ├── poster/               # GET /api/poster (OMDb poster fetching)
+│   │   │   ├── follows/              # POST/DELETE/GET /api/follows (user following)
+│   │   │   ├── users/                # GET /api/users/search (user search)
+│   │   │   └── lists/                # POST/DELETE/GET /api/lists/share (list sharing)
 │   │   ├── page.tsx                  # Landing page (home with recommendations)
 │   │   ├── search/                   # Search page (/search)
 │   │   ├── profile/                  # User profile page (/profile)
-│   │   ├── account/                  # Account settings
-│   │   ├── login/                    # Login page
-│   │   ├── signup/                   # Signup page
-│   │   ├── layout.tsx                # Root layout
+│   │   ├── account/                  # Account settings (/account)
+│   │   ├── login/                    # Login page (/login)
+│   │   ├── signup/                   # Signup page (/signup)
+│   │   ├── logout/                   # Logout page (/logout)
+│   │   ├── layout.tsx                # Root layout (includes AuthProvider)
 │   │   └── globals.css               # Global styles (Tailwind)
 │   ├── components/                   # React Components
 │   │   ├── MovieCard.tsx            # Movie card with interactions
 │   │   ├── MovieDetailsModal.tsx    # Modal with full movie details
 │   │   ├── MovieInteraction.tsx     # Watchlist/like/rating controls
-│   │   ├── Poster.tsx               # Movie poster component
+│   │   ├── FollowButton.tsx         # Follow/unfollow button
+│   │   ├── UserSearch.tsx           # User search component
+│   │   ├── ShareListDialog.tsx      # List sharing dialog
 │   │   ├── ConfirmDialog.tsx        # Confirmation dialogs
 │   │   └── ui/                      # shadcn/ui components
 │   │       ├── button.tsx
@@ -125,7 +160,14 @@ FilmMuse/
 │   │       ├── input.tsx
 │   │       └── select.tsx
 │   ├── lib/                          # Utility Libraries
-│   │   ├── auth-client.ts           # Client-side auth & localStorage
+│   │   ├── firebase/                 # Firebase integration
+│   │   │   ├── config.ts           # Firebase initialization
+│   │   │   ├── auth.ts             # Authentication functions
+│   │   │   ├── firestore.ts        # Firestore operations
+│   │   │   ├── follows.ts          # Follow system functions
+│   │   │   ├── auth-context.tsx    # React auth context provider
+│   │   │   └── api-helpers.ts      # API helper functions
+│   │   ├── auth-client.ts           # Legacy client-side auth (deprecated)
 │   │   ├── omdb.ts                  # OMDb API client with caching
 │   │   ├── movies.ts                # Movie data utilities
 │   │   └── utils.ts                 # General utilities
@@ -159,7 +201,10 @@ FilmMuse/
 
 - **`src/app/api/recommendations/route.ts`**: The optimized recommendation algorithm with scoring system
 - **`src/app/api/search/route.ts`**: Fast search with genre filtering and ranking
-- **`src/lib/auth-client.ts`**: Client-side user data management (localStorage)
+- **`src/lib/firebase/auth.ts`**: Firebase Authentication functions (signup, login, logout)
+- **`src/lib/firebase/firestore.ts`**: Firestore operations (watchlist, liked, ratings, custom lists)
+- **`src/lib/firebase/follows.ts`**: User following system functions
+- **`src/lib/firebase/auth-context.tsx`**: React context for app-wide authentication state
 - **`src/lib/omdb.ts`**: OMDb API integration with response caching
 - **`src/components/MovieCard.tsx`**: Reusable movie card component
 - **`src/data/movies.index.json`**: Pre-processed movie index for fast lookups
@@ -227,6 +272,33 @@ Get random movie recommendations from the full collection.
 ### Poster
 - `GET /api/poster?title={title}&year={year}`
   - Fetch movie poster URL
+
+### User Following
+- `POST /api/follows` - Follow a user
+  - Body: `{ targetUserId: string }`
+  - Requires authentication
+
+- `DELETE /api/follows?targetUserId={userId}` - Unfollow a user
+  - Requires authentication
+
+- `GET /api/follows?userId={userId}&type={followers|following}` - Get followers/following
+  - Requires authentication
+
+### User Search
+- `GET /api/users/search?q={query}` - Search users by username or email
+  - Requires authentication
+  - Returns up to 20 matching users
+
+### List Sharing
+- `POST /api/lists/share` - Share list with user or make public
+  - Body: `{ listId: string, targetUserId?: string, isPublic?: boolean }`
+  - Requires authentication
+
+- `DELETE /api/lists/share?listId={id}&targetUserId={userId}` - Unshare list
+  - Requires authentication
+
+- `GET /api/lists/share` - Get shared lists (public or shared with current user)
+  - Requires authentication
 
 ## 🎯 Key Features Explained
 
@@ -300,29 +372,56 @@ The search functionality is built for speed and efficiency:
 
 ### User Data Management
 
-All user data is stored **locally in the browser** using `localStorage`. No backend database or authentication server required.
+All user data is stored in **Firebase Firestore**, providing cloud-based persistence and synchronization across devices.
 
 **Stored Data:**
-- **Watchlist**: Movies you want to watch later
-- **Liked Movies**: Movies you've marked as liked
-- **Custom Lists**: User-created movie collections
-- **Ratings**: 5-star ratings for movies
-- **Activity History**: Track of your interactions
+- **User Profiles**: Username, email, creation date (`users` collection)
+- **Watchlist**: Movies you want to watch later (`userData` collection)
+- **Liked Movies**: Movies you've marked as liked (`userData` collection)
+- **Custom Lists**: User-created movie collections with sharing (`userData` collection)
+- **Ratings**: 5-star ratings for movies (`userData` collection)
+- **Follow Relationships**: User following system (`follows` collection)
+- **User Stats**: Follower/following counts (`userStats` collection)
 
 **Benefits:**
-- No account required - instant access
-- Privacy-first - data never leaves your browser
-- Fast - no network requests for user data
-- Persistent - data survives browser sessions
+- **Cloud Sync**: Access your data from any device
+- **Secure**: Firebase Authentication with email/password and Google Sign-In
+- **Real-time**: Data updates in real-time across sessions
+- **Social Features**: Follow users and share lists
+- **Scalable**: Firebase handles scaling automatically
 
-**Storage Structure:**
+**Firestore Collections:**
 ```typescript
+// users/{userId}
 {
-  watchlist: Movie[],
-  liked: Movie[],
-  ratings: { [movieId]: number },
-  customLists: { [listName]: Movie[] },
+  uid: string,
+  email: string,
+  username: string,
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+
+// userData/{userId}
+{
+  watchlist: MovieItem[],
+  liked: MovieItem[],
+  ratings: { [movieId]: MovieRating },
+  customLists: { [listId]: CustomList },
   activity: ActivityEntry[]
+}
+
+// follows/{followerId_followingId}
+{
+  followerId: string,
+  followingId: string,
+  createdAt: Timestamp,
+  deleted: boolean
+}
+
+// userStats/{userId}
+{
+  followersCount: number,
+  followingCount: number
 }
 ```
 
@@ -339,8 +438,10 @@ All user data is stored **locally in the browser** using `localStorage`. No back
 
 ### Backend/API
 - **Runtime**: Node.js (via Next.js API Routes)
+- **Database**: Firebase Firestore - NoSQL cloud database
+- **Authentication**: Firebase Authentication (Email/Password, Google Sign-In)
 - **Data Processing**: TypeScript scripts with tsx
-- **Data Format**: JSON/JSONL/CSV - No database required (file-based)
+- **Data Format**: JSON/JSONL/CSV for movie metadata (file-based)
 
 ### Data Sources
 - **Movie Metadata**: CSV files (credits.csv)
@@ -374,15 +475,31 @@ npm run lint         # Run ESLint
 
 ### Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env.local` file in the root directory (copy from `env.template`):
 
 ```env
+# Firebase Configuration (Required)
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
 # Optional: OMDb API key for movie details
 OMDB_API_KEY=your_omdb_api_key
+
+# Optional: Firebase Admin SDK (for server-side API routes)
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_service_account_email@project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 
 # Site URL
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
+
+**Important**: Never commit `.env.local` to version control. See `env.template` for the template file.
 
 ### Data Files
 
@@ -425,9 +542,42 @@ You can adjust the recommendation algorithm in `src/app/api/recommendations/rout
 - **Scoring weights**: Modify the score calculation (line 198)
 - **Result count**: Change from 30 to get more/fewer recommendations (line 219)
 
+## 🔐 Firebase Setup
+
+For detailed Firebase setup instructions, see [`FIREBASE_SETUP.md`](./FIREBASE_SETUP.md).
+
+**Quick Setup Checklist:**
+1. Create Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Authentication (Email/Password and Google)
+3. Create Firestore database
+4. Configure Firestore security rules (see FIREBASE_SETUP.md)
+5. Add Firebase config to `.env.local`
+6. (Optional) Set up Firebase Admin SDK for server-side API routes
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
+
+#### Firebase Authentication Errors
+
+**Symptoms**: Login/signup fails with authentication errors
+
+**Solutions**:
+- Verify all Firebase environment variables are set correctly in `.env.local`
+- Restart development server after adding environment variables
+- Check Firebase Console to ensure Authentication is enabled
+- Verify Email/Password and Google Sign-In are enabled in Firebase Console
+- Check browser console for detailed error messages
+
+#### Firestore Permission Errors
+
+**Symptoms**: "Permission denied" errors when accessing user data
+
+**Solutions**:
+- Check Firestore security rules in Firebase Console
+- Ensure user is authenticated (check auth state)
+- Verify security rules allow authenticated users to read/write their own data
+- See FIREBASE_SETUP.md for example security rules
 
 #### Movies not showing in search
 **Symptoms**: Search returns no results or empty results
@@ -462,8 +612,8 @@ You can adjust the recommendation algorithm in `src/app/api/recommendations/rout
 **Solutions**:
 - Ensure movies in watchlist/liked have genre data
 - Add more movies to watchlist for better recommendations
-- Clear browser localStorage and rebuild preferences
 - Check that movie IDs match between watchlist and index
+- Verify user data is syncing correctly from Firestore
 
 #### Search keeps reloading
 **Symptoms**: Search triggers multiple API calls
@@ -500,8 +650,10 @@ Vercel is the easiest deployment option for Next.js apps:
    - Import your GitHub repository
 
 3. **Configure Environment Variables**:
-   - Add `OMDB_API_KEY` in Vercel dashboard
-   - Add `NEXT_PUBLIC_SITE_URL` if needed
+   - Add all Firebase environment variables (NEXT_PUBLIC_FIREBASE_*)
+   - Add `OMDB_API_KEY` (optional)
+   - Add `NEXT_PUBLIC_SITE_URL` (optional)
+   - Add Firebase Admin SDK variables if using server-side API routes
 
 4. **Deploy**: Vercel automatically builds and deploys
 
@@ -510,6 +662,31 @@ Vercel is the easiest deployment option for Next.js apps:
 - Edge network for fast global access
 - Free tier includes generous limits
 - Built-in analytics
+
+### Firebase Hosting (Alternative)
+
+FilmMuse also includes Firebase Hosting configuration:
+
+1. **Install Firebase CLI**:
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+2. **Login to Firebase**:
+   ```bash
+   firebase login
+   ```
+
+3. **Initialize Firebase** (if not already done):
+   ```bash
+   firebase init
+   ```
+
+4. **Build and Deploy**:
+   ```bash
+   npm run build
+   firebase deploy
+   ```
 
 ### Other Platforms
 
@@ -539,8 +716,16 @@ npm run start    # Starts production server
 
 #### Environment Variables
 Make sure to set these in your deployment platform:
+- `NEXT_PUBLIC_FIREBASE_API_KEY` (required)
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` (required)
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID` (required)
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` (required)
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` (required)
+- `NEXT_PUBLIC_FIREBASE_APP_ID` (required)
+- `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` (required)
 - `OMDB_API_KEY` (optional)
 - `NEXT_PUBLIC_SITE_URL` (optional, for absolute URLs)
+- Firebase Admin SDK variables (optional, for server-side API routes)
 
 #### Static Export (Alternative)
 If you want a fully static site:
@@ -587,6 +772,11 @@ Use GitHub Issues to report bugs or suggest features. Include:
 - Expected vs actual behavior
 - Browser/environment info
 
+## 📚 Additional Documentation
+
+- **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**: Complete Firebase setup guide
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)**: Firebase integration implementation details
+
 ## 👤 Author
 
 **Raghav Verma**
@@ -595,6 +785,7 @@ Use GitHub Issues to report bugs or suggest features. Include:
 ## 🙏 Acknowledgments
 
 - Movie data from TMDB/OMDb
+- Firebase for authentication and database
 - UI components from shadcn/ui
 - Icons from Lucide React
 
