@@ -6,7 +6,9 @@ const PUBLIC_AUTH_PATHS = new Set(["/login", "/signup"]);
 
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
-  const isAuthed = req.cookies.get("auth")?.value === "1";
+  // Check for Firebase auth cookie (set by auth-context) or legacy auth cookie
+  const isAuthed = req.cookies.get("firebase-auth")?.value === "1" || 
+                   req.cookies.get("auth")?.value === "1";
 
   // Redirect /home to root
   if (pathname === "/home" || pathname.startsWith("/home/")) {

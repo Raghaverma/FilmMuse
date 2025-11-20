@@ -4,17 +4,15 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  getCurrentUser, 
-  getUserWatchlist, 
+  getUserWatchlist,
   getUserCustomLists,
   createCustomList,
   updateCustomList,
   deleteCustomList,
   getUserRatings,
   removeRating,
-  getUserActivities,
-  type Activity,
-} from "@/lib/auth-client";
+} from "@/lib/firebase/firestore";
+import { useAuth } from "@/lib/firebase/auth-context";
 import MovieCard from "@/components/MovieCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -26,94 +24,127 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Star, Plus, Edit, Trash2, Clock, Film } from "lucide-react";
+import { Star, Plus, Edit, Trash2, Film } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = React.useState<{ email: string; username: string } | null>(null);
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [watchlist, setWatchlist] = React.useState<{ watchlist: Array<{ id: string; title: string; year?: number; poster?: string | null }>; liked: Array<{ id: string; title: string; year?: number; poster?: string | null }> }>({ watchlist: [], liked: [] });
   const [customLists, setCustomLists] = React.useState<Array<{ id: string; name: string; description?: string; createdAt: number; movies: Array<{ id: string; title: string; year?: number; poster?: string | null }> }>>([]);
   const [ratings, setRatings] = React.useState<Record<string, { movieId: string; movieTitle: string; movieYear?: number; moviePoster?: string | null; rating: number; ratedAt: number }>>({});
-  const [activities, setActivities] = React.useState<Activity[]>([]);
-  const [activeTab, setActiveTab] = React.useState<"watchlist" | "liked" | "lists" | "ratings" | "activity">("watchlist");
+  const [activeTab, setActiveTab] = React.useState<"watchlist" | "liked" | "lists" | "ratings">("watchlist");
   const [showCreateListDialog, setShowCreateListDialog] = React.useState(false);
   const [editingList, setEditingList] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [deleteConfirm, setDeleteConfirm] = React.useState<{ isOpen: boolean; listId: string | null; listName: string }>({ isOpen: false, listId: null, listName: "" });
-  const hasCheckedAuth = React.useRef(false);
-  const hasRedirected = React.useRef(false);
 
   React.useEffect(() => {
-    if (hasCheckedAuth.current) return;
-    hasCheckedAuth.current = true;
-
-    const u = getCurrentUser();
-    if (!u) {
-      if (!hasRedirected.current) {
-        hasRedirected.current = true;
-        router.replace("/?next=/profile");
-      }
+    if (authLoading) return;
+    
+    if (!user) {
+      router.replace("/?next=/profile");
       return;
     }
-    setUser(u);
-    const wl = getUserWatchlist();
-    setWatchlist(wl);
-    const lists = getUserCustomLists();
-    setCustomLists(lists);
-    const userRatings = getUserRatings();
-    setRatings(userRatings);
-    const userActivities = getUserActivities();
-    setActivities(userActivities);
-    setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
 
-  const refreshData = React.useCallback(() => {
-    const wl = getUserWatchlist();
-    setWatchlist(wl);
-    const lists = getUserCustomLists();
-    setCustomLists(lists);
-    const userRatings = getUserRatings();
-    setRatings(userRatings);
-    const userActivities = getUserActivities();
-    setActivities(userActivities);
-  }, []);
+    const loadData = async () => {
+      try {
+        const wl = await getUserWatchlist(user.uid);
+        setWatchlist(wl);
+        const lists = await getUserCustomLists(user.uid);
+        setCustomLists(lists.map(l => ({
+          id: l.id,
+          name: l.name,
+          description: l.description,
+          createdAt: typeof l.createdAt === 'number' ? l.createdAt : Date.now(),
+          movies: l.movies
+        })));
+        const userRatings = await getUserRatings(user.uid);
+        setRatings(userRatings);
+      } catch (error) {
+        console.error("Error loading profile data:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user, authLoading, router]);
+
+  const refreshData = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const wl = await getUserWatchlist(user.uid);
+      setWatchlist(wl);
+      const lists = await getUserCustomLists(user.uid);
+      setCustomLists(lists.map(l => ({
+        id: l.id,
+        name: l.name,
+        description: l.description,
+        createdAt: typeof l.createdAt === 'number' ? l.createdAt : Date.now(),
+        movies: l.movies
+      })));
+      const userRatings = await getUserRatings(user.uid);
+      setRatings(userRatings);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast.error("Failed to refresh data");
+    }
+  }, [user]);
 
 
-  const handleCreateList = (name: string, description?: string) => {
-    createCustomList(name, description);
-    refreshData();
-    setShowCreateListDialog(false);
+  const handleCreateList = async (name: string, description?: string) => {
+    try {
+      await createCustomList(name, description);
+      await refreshData();
+      setShowCreateListDialog(false);
+      toast.success("List created");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create list");
+    }
   };
 
-  const handleUpdateList = (listId: string, name: string, description?: string) => {
-    updateCustomList(listId, { name, description });
-    refreshData();
-    setEditingList(null);
+  const handleUpdateList = async (listId: string, name: string, description?: string) => {
+    try {
+      await updateCustomList(listId, { name, description });
+      await refreshData();
+      setEditingList(null);
+      toast.success("List updated");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update list");
+    }
   };
 
   const handleDeleteList = (listId: string, listName: string) => {
     setDeleteConfirm({ isOpen: true, listId, listName });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteConfirm.listId) {
-      deleteCustomList(deleteConfirm.listId);
-      refreshData();
-      setDeleteConfirm({ isOpen: false, listId: null, listName: "" });
-      toast.success("List deleted");
+      try {
+        await deleteCustomList(deleteConfirm.listId);
+        await refreshData();
+        setDeleteConfirm({ isOpen: false, listId: null, listName: "" });
+        toast.success("List deleted");
+      } catch (error: any) {
+        toast.error(error.message || "Failed to delete list");
+      }
     }
   };
 
-
-  const handleRemoveRating = (movieId: string) => {
-    removeRating(movieId);
-    refreshData();
+  const handleRemoveRating = async (movieId: string) => {
+    try {
+      await removeRating(movieId);
+      await refreshData();
+      toast.success("Rating removed");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to remove rating");
+    }
   };
 
-  if (isLoading || !user) {
+  if (authLoading || isLoading || !user || !userProfile) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] text-neutral-100 flex items-center justify-center">
         <div className="text-neutral-400">Loading...</div>
@@ -121,18 +152,6 @@ export default function ProfilePage() {
     );
   }
 
-  const formatTimeAgo = (timestamp: number) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    if (seconds < 60) return "just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    const weeks = Math.floor(days / 7);
-    return `${weeks}w ago`;
-  };
 
   return (
     <motion.main 
@@ -163,10 +182,10 @@ export default function ProfilePage() {
           <h2 className="text-lg font-medium mb-2">User Information</h2>
           <div className="grid gap-2 text-sm">
             <div>
-              <span className="text-neutral-400">Username:</span> <span className="text-white">{user.username}</span>
+              <span className="text-neutral-400">Username:</span> <span className="text-white">{userProfile.username}</span>
             </div>
             <div>
-              <span className="text-neutral-400">Email:</span> <span className="text-white">{user.email}</span>
+              <span className="text-neutral-400">Email:</span> <span className="text-white">{userProfile.email}</span>
             </div>
           </div>
         </motion.section>
@@ -212,17 +231,6 @@ export default function ProfilePage() {
               }`}
             >
               Ratings ({Object.keys(ratings).length})
-            </button>
-            <button
-              onClick={() => setActiveTab("activity")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === "activity"
-                  ? "border-b-2 border-emerald-400 text-emerald-400"
-                  : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              <Clock className="inline h-4 w-4 mr-1" />
-              Activity ({activities.length})
             </button>
             {activeTab === "lists" && (
               <Button
@@ -454,55 +462,6 @@ export default function ProfilePage() {
               </motion.div>
             )}
 
-            {activeTab === "activity" && (
-              <motion.div
-                key="activity"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              >
-                {activities.length === 0 ? (
-                <p className="text-sm text-neutral-400 py-8 text-center">No recent activity. Start exploring and adding movies!</p>
-              ) : (
-                <div className="space-y-3">
-                  {activities.map((activity, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 border border-white/10 rounded-lg">
-                      <Clock className="h-4 w-4 text-neutral-500 mt-0.5" />
-                      <div className="flex-1">
-                        <div className="text-sm">
-                          {activity.type === "movie_added_to_watchlist" && (
-                            <>Added <span className="font-medium">{activity.movieTitle}</span> to watchlist</>
-                          )}
-                          {activity.type === "movie_liked" && (
-                            <>Liked <span className="font-medium">{activity.movieTitle}</span></>
-                          )}
-                          {activity.type === "movie_rated" && (
-                            <>Rated <span className="font-medium">{activity.movieTitle}</span> {activity.rating} stars</>
-                          )}
-                          {activity.type === "list_created" && (
-                            <>Created list <span className="font-medium">{activity.listName}</span></>
-                          )}
-                          {activity.type === "list_updated" && (
-                            <>Updated list <span className="font-medium">{activity.listName}</span></>
-                          )}
-                          {activity.type === "list_deleted" && (
-                            <>Deleted list <span className="font-medium">{activity.listName}</span></>
-                          )}
-                          {activity.type === "movie_added_to_list" && (
-                            <>Added <span className="font-medium">{activity.movieTitle}</span> to list <span className="font-medium">{activity.listName}</span></>
-                          )}
-                        </div>
-                        <div className="text-xs text-neutral-500 mt-1">
-                          {formatTimeAgo(activity.timestamp)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                )}
-              </motion.div>
-            )}
           </AnimatePresence>
         </section>
       </div>

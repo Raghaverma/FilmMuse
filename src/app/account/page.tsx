@@ -5,31 +5,49 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser, updateProfile } from "@/lib/auth-client";
+import { useAuth } from "@/lib/firebase/auth-context";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { toast } from "react-hot-toast";
 
 export default function AccountPage() {
   const router = useRouter();
+  const { user, userProfile, loading } = useAuth();
   const [username, setUsername] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
 
   React.useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
+    if (loading) return;
+    if (!user || !userProfile) {
       router.replace("/login?next=/account");
       return;
     }
-    setUsername(u.username);
-    setEmail(u.email);
-  }, [router]);
+    setUsername(userProfile.username);
+    setEmail(userProfile.email);
+  }, [user, userProfile, loading, router]);
 
   const save = async () => {
+    if (!user) return;
     setSaved(false);
     setSaving(true);
     try {
-      await updateProfile({ username });
+      await updateDoc(doc(db, "users", user.uid), {
+        username: username.trim(),
+        updatedAt: serverTimestamp(),
+      });
+      // Update display name in Firebase Auth
+      if (user.displayName !== username.trim()) {
+        const { updateProfile } = await import("firebase/auth");
+        const { auth } = await import("@/lib/firebase/config");
+        await updateProfile(auth.currentUser!, { displayName: username.trim() });
+      }
       setSaved(true);
+      toast.success("Profile updated");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update profile";
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }

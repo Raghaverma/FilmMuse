@@ -4,7 +4,8 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Clock, Calendar, Award, Film } from "lucide-react";
 import MovieInteraction from "./MovieInteraction";
-import { getUserRatings } from "@/lib/auth-client";
+import { getUserRatings } from "@/lib/firebase/firestore";
+import { useAuth } from "@/lib/firebase/auth-context";
 
 type MovieDetails = {
   title: string;
@@ -43,6 +44,7 @@ type Props = {
 };
 
 export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: Props) {
+  const { user } = useAuth();
   const [details, setDetails] = React.useState<MovieDetails | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -99,13 +101,24 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
     fetchDetails();
 
     // Load user rating
-    const ratings = getUserRatings();
-    setUserRating(ratings[movie.id]?.rating || 0);
+    const loadRating = async () => {
+      if (user) {
+        try {
+          const ratings = await getUserRatings(user.uid);
+          setUserRating(ratings[movie.id]?.rating || 0);
+        } catch (error) {
+          console.error("Error loading rating:", error);
+        }
+      } else {
+        setUserRating(0);
+      }
+    };
+    loadRating();
 
     return () => {
       cancelled = true;
     };
-  }, [isOpen, movie.id, movie.title, movie.year]);
+  }, [isOpen, movie.id, movie.title, movie.year, user]);
 
   const handleClose = React.useCallback(() => {
     setDetails(null);
@@ -238,9 +251,15 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
                       <div className="flex items-center gap-2">
                         <MovieInteraction
                           movie={{ id: movie.id, title: movie.title, year: movie.year, poster: details.poster || movie.poster }}
-                          onUpdate={() => {
-                            const ratings = getUserRatings();
-                            setUserRating(ratings[movie.id]?.rating || 0);
+                          onUpdate={async () => {
+                            if (user) {
+                              try {
+                                const ratings = await getUserRatings(user.uid);
+                                setUserRating(ratings[movie.id]?.rating || 0);
+                              } catch (error) {
+                                console.error("Error loading rating:", error);
+                              }
+                            }
                             onUpdate?.();
                           }}
                         />

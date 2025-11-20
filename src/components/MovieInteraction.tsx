@@ -15,13 +15,14 @@ import {
   addToLiked,
   removeFromWatchlist,
   removeFromLiked,
-  getUserWatchlist,
+  getUserData,
   getUserCustomLists,
   addMovieToCustomList,
   rateMovie,
   getUserRatings,
   type MovieItem,
-} from "@/lib/auth-client";
+} from "@/lib/firebase/firestore";
+import { useAuth } from "@/lib/firebase/auth-context";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ type MovieInteractionProps = {
 };
 
 export default function MovieInteraction({ movie, onUpdate, className }: MovieInteractionProps) {
+  const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [showRatingDialog, setShowRatingDialog] = React.useState(false);
   const [showListDialog, setShowListDialog] = React.useState(false);
@@ -48,13 +50,24 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
   const menuRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    const wl = getUserWatchlist();
-    setWatchlist(wl);
-    const lists = getUserCustomLists();
-    setCustomLists(lists);
-    const userRatings = getUserRatings();
-    setRatings(userRatings);
-  }, []);
+    if (!user) return;
+    const loadData = async () => {
+      try {
+        const userData = await getUserData(user.uid);
+        setWatchlist({ watchlist: userData.watchlist, liked: userData.liked });
+        setRatings(
+          Object.fromEntries(
+            Object.entries(userData.ratings).map(([k, v]) => [k, { rating: v.rating }])
+          )
+        );
+        const lists = await getUserCustomLists();
+        setCustomLists(lists.map(l => ({ id: l.id, name: l.name, movies: l.movies })));
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    };
+    loadData();
+  }, [user]);
 
   // Close menu when clicking outside
   React.useEffect(() => {
@@ -76,71 +89,93 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
   const inLiked = watchlist.liked.some(m => m.id === movie.id);
   const currentRating = ratings[movie.id]?.rating || 0;
 
-  const handleAddToWatchlist = () => {
+  const handleAddToWatchlist = async () => {
+    if (!user) {
+      toast.error("Please log in to add to watchlist");
+      return;
+    }
     try {
       if (inWatchlist) {
-        removeFromWatchlist(movie.id);
+        await removeFromWatchlist(movie.id);
         toast.success("Removed from watchlist");
       } else {
-        addToWatchlist(movie);
+        await addToWatchlist(movie);
         toast.success("Added to watchlist 🍿", {
           icon: "📽️",
         });
       }
-      const wl = getUserWatchlist();
-      setWatchlist(wl);
+      const userData = await getUserData(user.uid);
+      setWatchlist({ watchlist: userData.watchlist, liked: userData.liked });
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch {
-      toast.error("Failed to update watchlist");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update watchlist");
     }
   };
 
-  const handleAddToLiked = () => {
+  const handleAddToLiked = async () => {
+    if (!user) {
+      toast.error("Please log in to like movies");
+      return;
+    }
     try {
       if (inLiked) {
-        removeFromLiked(movie.id);
+        await removeFromLiked(movie.id);
         toast.success("Removed from liked");
       } else {
-        addToLiked(movie);
+        await addToLiked(movie);
         toast.success("Added to favorites 💖", {
           icon: "❤️",
         });
       }
-      const wl = getUserWatchlist();
-      setWatchlist(wl);
+      const userData = await getUserData(user.uid);
+      setWatchlist({ watchlist: userData.watchlist, liked: userData.liked });
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch {
-      toast.error("Failed to update favorites");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update favorites");
     }
   };
 
-  const handleRate = () => {
+  const handleRate = async () => {
+    if (!user) {
+      toast.error("Please log in to rate movies");
+      return;
+    }
     if (selectedRating > 0) {
       try {
-        rateMovie(movie.id, movie.title, selectedRating, movie.year, movie.poster);
+        await rateMovie(movie.id, movie.title, selectedRating, movie.year, movie.poster);
         toast.success(`Rated ${movie.title} ${selectedRating} stars ⭐`);
-        const userRatings = getUserRatings();
-        setRatings(userRatings);
+        const userData = await getUserData(user.uid);
+        setRatings(
+          Object.fromEntries(
+            Object.entries(userData.ratings).map(([k, v]) => [k, { rating: v.rating }])
+          )
+        );
         setShowRatingDialog(false);
         setIsMenuOpen(false);
         onUpdate?.();
-      } catch {
-        toast.error("Failed to rate movie");
+      } catch (error: any) {
+        toast.error(error.message || "Failed to rate movie");
       }
     }
   };
 
-  const handleAddToList = (listId: string) => {
+  const handleAddToList = async (listId: string) => {
+    if (!user) {
+      toast.error("Please log in to add to lists");
+      return;
+    }
     try {
-      addMovieToCustomList(listId, movie);
+      await addMovieToCustomList(listId, movie);
       toast.success("Added to list ✅");
+      const lists = await getUserCustomLists();
+      setCustomLists(lists.map(l => ({ id: l.id, name: l.name, movies: l.movies })));
       setShowListDialog(false);
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch {
-      toast.error("Failed to add to list");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add to list");
     }
   };
 

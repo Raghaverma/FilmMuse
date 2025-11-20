@@ -12,8 +12,11 @@ import {
   Star,
   Search,
 } from "lucide-react";
-import { getCurrentUser, login, signup, getUserWatchlist } from "@/lib/auth-client";
+import { useAuth } from "@/lib/firebase/auth-context";
+import { getUserWatchlist } from "@/lib/firebase/firestore";
+import { loginWithEmail, signupWithEmail } from "@/lib/firebase/auth";
 import MovieCard from "@/components/MovieCard";
+import MovieDetailsModal from "@/components/MovieDetailsModal";
 import {
   Dialog,
   DialogContent,
@@ -21,57 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const FILMS = [
-  {
-    id: "blade-runner-2049",
-    title: "Blade Runner 2049",
-    year: 2017,
-    meta: "Sci-Fi • Neo-Noir • 2h 44m",
-    poster: "/banners/Blade-Runner.jpg",
-  },
-  {
-    id: "demon-slayer-infinity-castle",
-    title: "Demon Slayer: Infinity Castle",
-    year: 2025,
-    meta: "Anime • Action • Fantasy",
-    poster: "/banners/Demon Slayer Infinity Castle.jpg",
-  },
-  {
-    id: "get-out",
-    title: "Get Out",
-    year: 2017,
-    meta: "Horror • Mystery • 1h 44m",
-    poster: "/banners/getout.jpg",
-  },
-  {
-    id: "inception",
-    title: "Inception",
-    year: 2010,
-    meta: "Sci-Fi • Thriller • 2h 28m",
-    poster: "/banners/Inception.jpg",
-  },
-  {
-    id: "mad-max-fury-road",
-    title: "Mad Max: Fury Road",
-    year: 2015,
-    meta: "Action • Adventure • 2h 0m",
-    poster: "/banners/madmax.jpg",
-  },
-  {
-    id: "past-lives",
-    title: "Past Lives",
-    year: 2023,
-    meta: "Romance • Drama • 1h 46m",
-    poster: "/banners/PastLives.jpeg",
-  },
-  {
-    id: "grand-budapest-hotel",
-    title: "The Grand Budapest Hotel",
-    year: 2014,
-    meta: "Comedy • Drama • 1h 39m",
-    poster: "/banners/The Grand Budapest Hotel.jpg",
-  },
-];
+// Removed hardcoded FILMS - now using dynamic recommendations
 
 export default function Page() {
   return (
@@ -100,14 +53,20 @@ function NavBar() {
   const [showAuthDialog, setShowAuthDialog] = React.useState(false);
   const [isLogin, setIsLogin] = React.useState(true);
 
+  const { user: firebaseUser, userProfile } = useAuth();
+
   React.useEffect(() => {
-    const u = getCurrentUser();
-    setUser(u);
-  }, []);
+    if (firebaseUser && userProfile) {
+      setUser({ email: userProfile.email, username: userProfile.username });
+    } else {
+      setUser(null);
+    }
+  }, [firebaseUser, userProfile]);
 
   const handleAuthSuccess = () => {
-    const u = getCurrentUser();
-    setUser(u);
+    if (firebaseUser && userProfile) {
+      setUser({ email: userProfile.email, username: userProfile.username });
+    }
     setShowAuthDialog(false);
   };
 
@@ -286,6 +245,68 @@ function SearchBar() {
 /* ───────────────────────── Hero Visual: Banner Carousel ───────────────────────── */
 function HeroVisual() {
   const prefersReduced = useReducedMotion();
+  const { user } = useAuth();
+  const [recommendedMovies, setRecommendedMovies] = React.useState<Array<{ id: string; title: string; year?: number; meta?: string; poster?: string | null }>>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadRecommendations = async () => {
+      try {
+        setLoading(true);
+        // Try to get personalized recommendations if user is logged in
+        if (user) {
+          try {
+            const watchlist = await getUserWatchlist(user.uid);
+            const res = await fetch("/api/recommendations", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                watchlist: watchlist.watchlist,
+                liked: watchlist.liked,
+              }),
+            });
+            const data = await res.json();
+            if (data.items && data.items.length > 0) {
+              setRecommendedMovies(data.items.slice(0, 8)); // Get top 8 for carousel
+              setLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error("Failed to load personalized recommendations:", error);
+          }
+        }
+        
+        // Fallback to random recommendations
+        const res = await fetch("/api/recommendations/random");
+        const data = await res.json();
+        if (data.items && data.items.length > 0) {
+          setRecommendedMovies(data.items.slice(0, 8));
+        }
+      } catch (error) {
+        console.error("Failed to load recommendations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRecommendations();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="relative -mt-6 mx-auto max-w-6xl select-none px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-2 shadow-2xl">
+          <div className="relative aspect-[16/9] w-full rounded-xl bg-white/5 animate-pulse flex items-center justify-center">
+            <span className="text-neutral-400">Loading recommendations...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (recommendedMovies.length === 0) {
+    return null;
+  }
 
   return (
     <div className="relative -mt-6 mx-auto max-w-6xl select-none px-4 pb-8 sm:px-6 lg:px-8">
@@ -296,9 +317,116 @@ function HeroVisual() {
         transition={{ duration: 0.6, delay: 0.1 }}
         className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-2 shadow-2xl"
       >
-        <BannerCarousel items={FILMS} />
+        <BannerCarousel items={recommendedMovies} />
       </motion.div>
     </div>
+  );
+}
+
+function CarouselSlide({
+  movie,
+  active,
+  index,
+  total,
+  prefersReduced,
+  onClick,
+}: {
+  movie: { id: string; title: string; year?: number; meta?: string; poster?: string | null };
+  active: boolean;
+  index: number;
+  total: number;
+  prefersReduced: boolean;
+  onClick: () => void;
+}) {
+  // Check if poster is a valid URL or path
+  const isValidPoster = movie.poster && movie.poster !== "N/A" && movie.poster.trim() !== "";
+  const [posterSrc, setPosterSrc] = React.useState<string | null>(isValidPoster ? movie.poster! : null);
+  const [loading, setLoading] = React.useState(!isValidPoster);
+  const [tried, setTried] = React.useState(false);
+
+  React.useEffect(() => {
+    // If we already have a valid poster, don't fetch
+    if (posterSrc && posterSrc !== "N/A") return;
+    
+    // If we already tried fetching, don't try again
+    if (tried) return;
+    
+    let cancelled = false;
+
+    const fetchPoster = async () => {
+      try {
+        setLoading(true);
+        const url = `/api/poster?title=${encodeURIComponent(movie.title)}${movie.year ? `&year=${movie.year}` : ""}`;
+        const res = await fetch(url, { cache: "force-cache" });
+        const data = await res.json();
+        if (!cancelled && data?.poster && data.poster !== "N/A") {
+          setPosterSrc(data.poster);
+        }
+      } catch (e) {
+        console.warn("Poster fetch failed:", e);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setTried(true);
+        }
+      }
+    };
+
+    // Fetch poster immediately for all slides (preload)
+    fetchPoster();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [posterSrc, tried, movie.title, movie.year]);
+
+  return (
+    <motion.div
+      className="absolute inset-0"
+      role="group"
+      aria-roledescription="slide"
+      aria-label={`${movie.title} (${index + 1} of ${total})`}
+      initial={false}
+      animate={
+        active
+          ? { opacity: 1, scale: prefersReduced ? 1 : 1.0 }
+          : { opacity: 0, scale: prefersReduced ? 1 : 1.02 }
+      }
+      transition={{ duration: prefersReduced ? 0 : 0.5 }}
+      style={{ pointerEvents: active ? "auto" : "none" }}
+      onClick={onClick}
+    >
+      <div className="relative h-full w-full">
+        {posterSrc ? (
+          <img
+            src={posterSrc}
+            alt={`${movie.title} banner`}
+            className="w-full h-full object-cover"
+            onError={() => setPosterSrc(null)}
+            loading={index === 0 ? "eager" : "lazy"}
+          />
+        ) : loading ? (
+          <div className="w-full h-full bg-gradient-to-br from-emerald-900/20 to-blue-900/20 flex items-center justify-center animate-pulse">
+            <Film className="h-16 w-16 text-neutral-600" />
+          </div>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-emerald-900/20 to-blue-900/20 flex items-center justify-center">
+            <Film className="h-16 w-16 text-neutral-600" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        <div className="absolute left-0 right-0 bottom-0 p-4 sm:p-6">
+          <div className="max-w-[80%]">
+            <div className="text-lg font-semibold text-neutral-100 sm:text-2xl drop-shadow">
+              {movie.title}
+            </div>
+            <div className="text-xs text-neutral-200/90 sm:text-sm drop-shadow">
+              {movie.year ? `${movie.year} • ` : ""}{movie.meta || "Movie"}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -306,12 +434,14 @@ function BannerCarousel({
   items,
   interval = 4500,
 }: {
-  items: { id: string; title: string; year: number; meta: string; poster: string }[];
+  items: { id: string; title: string; year?: number; meta?: string; poster?: string | null }[];
   interval?: number;
 }) {
   const prefersReduced = useReducedMotion();
   const [index, setIndex] = React.useState(0);
   const [hovering, setHovering] = React.useState(false);
+  const [selectedMovie, setSelectedMovie] = React.useState<{ id: string; title: string; year?: number; poster?: string | null; meta?: string } | null>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
   const total = items.length;
 
   React.useEffect(() => {
@@ -331,57 +461,35 @@ function BannerCarousel({
 
   const go = (dir: number) => setIndex((i) => (i + dir + total) % total);
 
+  const handleMovieClick = (movie: { id: string; title: string; year?: number; poster?: string | null; meta?: string }) => {
+    setSelectedMovie(movie);
+    setIsModalOpen(true);
+  };
+
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-xl"
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-      aria-roledescription="carousel"
-      aria-label="Featured film banners"
-    >
+    <>
+      <div
+        className="relative w-full overflow-hidden rounded-xl cursor-pointer"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        aria-roledescription="carousel"
+        aria-label="Featured film banners"
+      >
       {/* Slides */}
       <div className="relative aspect-[16/9] w-full">
         {items.map((f, i) => {
           const active = i === index;
 
           return (
-            <motion.div
+            <CarouselSlide
               key={f.id}
-              className="absolute inset-0"
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${f.title} (${i + 1} of ${total})`}
-              initial={false}
-              animate={
-                active
-                  ? { opacity: 1, scale: prefersReduced ? 1 : 1.0 }
-                  : { opacity: 0, scale: prefersReduced ? 1 : 1.02 }
-              }
-              transition={{ duration: prefersReduced ? 0 : 0.5 }}
-              style={{ pointerEvents: active ? "auto" : "none" }}
-            >
-              <div className="relative h-full w-full">
-                <Image
-                  src={f.poster}
-                  alt={`${f.title} banner`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width:1280px) 90vw, 1200px"
-                  className="object-cover"
-                  priority={i === 0}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                <div className="absolute left-0 right-0 bottom-0 p-4 sm:p-6">
-                  <div className="max-w-[80%]">
-                    <div className="text-lg font-semibold text-neutral-100 sm:text-2xl drop-shadow">
-                      {f.title}
-                    </div>
-                    <div className="text-xs text-neutral-200/90 sm:text-sm drop-shadow">
-                      {f.year} • {f.meta}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+              movie={f}
+              active={active}
+              index={i}
+              total={total}
+              prefersReduced={prefersReduced}
+              onClick={() => active && handleMovieClick(f)}
+            />
           );
         })}
       </div>
@@ -426,14 +534,28 @@ function BannerCarousel({
           <button
             key={i}
             aria-label={`Go to slide ${i + 1}`}
-            onClick={() => setIndex(i)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIndex(i);
+            }}
             className={`h-1.5 rounded-full transition-all ${
               i === index ? "w-5 bg-emerald-400" : "w-2 bg-white/40 hover:bg-white/70"
             }`}
           />
         ))}
       </div>
+      {selectedMovie && (
+        <MovieDetailsModal
+          movie={selectedMovie}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedMovie(null);
+          }}
+        />
+      )}
     </div>
+    </>
   );
 }
 
@@ -454,6 +576,7 @@ function TrustBar() {
 
 /* Discover - Recommendations */
 function SectionDiscover() {
+  const { user } = useAuth();
   const [personalizedRecs, setPersonalizedRecs] = React.useState<Array<{ id: string; title: string; year?: number; meta?: string; poster?: string | null }>>([]);
   const [randomRecs, setRandomRecs] = React.useState<Array<{ id: string; title: string; year?: number; meta?: string; poster?: string | null }>>([]);
   const [loadingPersonalized, setLoadingPersonalized] = React.useState(true);
@@ -462,8 +585,12 @@ function SectionDiscover() {
   React.useEffect(() => {
     // Load personalized recommendations
     const loadPersonalized = async () => {
+      if (!user) {
+        setLoadingPersonalized(false);
+        return;
+      }
       try {
-        const watchlist = getUserWatchlist();
+        const watchlist = await getUserWatchlist(user.uid);
         const res = await fetch("/api/recommendations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -496,13 +623,14 @@ function SectionDiscover() {
 
     loadPersonalized();
     loadRandom();
-  }, []);
+  }, [user]);
 
   const handleUpdate = React.useCallback(() => {
+    if (!user) return;
     // Reload recommendations when watchlist/liked changes
     const loadPersonalized = async () => {
       try {
-        const watchlist = getUserWatchlist();
+        const watchlist = await getUserWatchlist(user.uid);
         const res = await fetch("/api/recommendations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -518,7 +646,7 @@ function SectionDiscover() {
       }
     };
     loadPersonalized();
-  }, []);
+  }, [user]);
 
   return (
     <section id="discover" className="relative" aria-labelledby="discover-title">
@@ -596,46 +724,10 @@ function SectionDiscover() {
             ))}
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {FILMS.map((f, idx) => (
-              <article
-                key={f.id}
-                className="group overflow-hidden rounded-xl border border-white/10 bg-white/5"
-                aria-label={`${f.title} (${f.year})`}
-              >
-                <div className="relative w-full overflow-hidden rounded-b-none">
-                  <div className="relative aspect-[16/9] w-full">
-                    <Image
-                      src={f.poster}
-                      alt={`${f.title} banner`}
-                      fill
-                      priority={idx < 2}
-                      sizes="(max-width: 768px) 100vw, (max-width:1280px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      onError={(e) => {
-                        (e.currentTarget as unknown as HTMLImageElement).style.display =
-                          "none";
-                      }}
-                    />
-                    <div className="absolute inset-0 hidden bg-gradient-to-t from-black/60 via-black/10 to-transparent group-hover:opacity-90 sm:block" />
-                    <div className="absolute inset-0 sm:hidden bg-[radial-gradient(circle_at_60%_40%,rgba(16,185,129,.15),transparent_50%)]" />
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 z-[1] p-3">
-                    <div className="text-sm font-medium text-neutral-100 drop-shadow">
-                      {f.title}
-                    </div>
-                    <div className="text-xs text-neutral-300/90 drop-shadow">
-                      {f.year} • {f.meta}
-                    </div>
-                  </div>
-                </div>
-                <div className="p-3">
-                  <div className="flex items-center gap-2 text-xs text-neutral-400">
-                    <Star className="h-4 w-4 text-neutral-500" /> Curated for your vibe
-                  </div>
-                </div>
-              </article>
-            ))}
+          <div className="text-center py-12">
+            <Film className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+            <p className="text-sm text-neutral-400 mb-2">No recommendations available yet.</p>
+            <p className="text-xs text-neutral-500">Start exploring movies to get personalized recommendations!</p>
           </div>
         )}
       </div>
@@ -705,7 +797,7 @@ function LoginForm({ onSuccess, onSwitchToSignup }: { onSuccess: () => void; onS
     setError(null);
     setLoading(true);
     try {
-      await login({ email, password });
+      await loginWithEmail(email, password);
       onSuccess();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Login failed";
@@ -771,7 +863,7 @@ function SignupForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; onS
     setError(null);
     setLoading(true);
     try {
-      await signup({ email, username, password });
+      await signupWithEmail(email, password, username);
       onSuccess();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Signup failed";
