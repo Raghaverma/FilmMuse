@@ -50,10 +50,19 @@ export async function apiCall(endpoint: string, options: RequestInit = {}) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "API request failed");
+    const contentType = response.headers.get("content-type");
+    if (contentType?.includes("application/json")) {
+      const error = await response.json();
+      throw new Error(error.error || "API request failed");
+    } else {
+      throw new Error(`API request failed: ${response.status}`);
+    }
   }
 
+  const contentType = response.headers.get("content-type");
+  if (!contentType?.includes("application/json")) {
+    throw new Error("Invalid response type");
+  }
   return response.json();
 }
 

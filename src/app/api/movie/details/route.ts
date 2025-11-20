@@ -1,51 +1,113 @@
 import { NextResponse } from "next/server";
+import { fetchTmdbOnce } from "@/lib/tmdb";
 import { fetchOmdbOnce } from "@/lib/omdb";
+import { validateRequest, movieDetailsSchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const title = searchParams.get("title");
-  const year = searchParams.get("year") ? Number(searchParams.get("year")) : undefined;
+  try {
+    const { searchParams } = new URL(req.url);
+    const params = validateRequest(movieDetailsSchema, {
+      title: searchParams.get("title"),
+      year: searchParams.get("year"),
+    });
+    const { title, year } = params;
 
-  if (!title) {
-    return NextResponse.json({ error: "Missing title" }, { status: 400 });
-  }
+    // Try TMDb first (primary source)
+    let data: any = null;
+    let source = "tmdb";
+    
+    const tmdbData = await fetchTmdbOnce(title, year);
+    if (tmdbData) {
+      // Map TMDb data to unified format
+      data = {
+        title: tmdbData.title || title,
+        year: tmdbData.year || year,
+        runtime: tmdbData.runtime,
+        genre: tmdbData.genre,
+        director: tmdbData.director,
+        writer: tmdbData.writer,
+        actors: tmdbData.actors,
+        plot: tmdbData.plot,
+        language: tmdbData.language,
+        country: tmdbData.country,
+        production: tmdbData.production,
+        poster: tmdbData.poster,
+        imdbRating: tmdbData.imdbRating,
+        imdbVotes: tmdbData.imdbVotes,
+        imdbID: tmdbData.imdbID,
+        backdrop: tmdbData.backdrop,
+        tagline: tmdbData.tagline,
+        // TMDb doesn't have these fields, leave undefined
+        rated: undefined,
+        released: undefined,
+        awards: undefined,
+        ratings: [],
+        metascore: undefined,
+        boxOffice: undefined,
+      };
+    } else {
+      // Fallback to OMDb
+      source = "omdb";
+      const omdbData = await fetchOmdbOnce(title, year);
+      
+      if (omdbData && omdbData.Response === "True") {
+        data = {
+          title: omdbData.Title || title,
+          year: omdbData.Year ? parseInt(omdbData.Year) : year,
+          rated: omdbData.Rated,
+          released: omdbData.Released,
+          runtime: omdbData.Runtime,
+          genre: omdbData.Genre,
+          director: omdbData.Director,
+          writer: omdbData.Writer,
+          actors: omdbData.Actors,
+          plot: omdbData.Plot,
+          language: omdbData.Language,
+          country: omdbData.Country,
+          awards: omdbData.Awards,
+          poster: omdbData.Poster && omdbData.Poster !== "N/A" ? omdbData.Poster : null,
+          ratings: omdbData.Ratings || [],
+          metascore: omdbData.Metascore,
+          imdbRating: omdbData.imdbRating,
+          imdbVotes: omdbData.imdbVotes,
+          imdbID: omdbData.imdbID,
+          boxOffice: omdbData.BoxOffice,
+          production: omdbData.Production,
+        };
+      }
+    }
 
-  const data = await fetchOmdbOnce(title, year);
+    // If both APIs fail, return basic info
+    if (!data) {
+      return NextResponse.json({
+        title,
+        year,
+        error: `Details not available from TMDb or OMDb API`,
+        plot: null,
+        poster: null,
+        source: "none",
+      });
+    }
 
-  // If OMDb fails, return basic info instead of 404
-  if (!data || data.Response !== "True") {
+    return NextResponse.json({
+      ...data,
+      source,
+    });
+  } catch (error: unknown) {
+    // Even on validation error, return basic structure with error message
+    // This allows the modal to display something instead of failing completely
+    const { searchParams } = new URL(req.url);
+    const title = searchParams.get("title") || "Unknown";
+    const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined;
+    const message = error instanceof Error ? error.message : "Invalid request";
+    
     return NextResponse.json({
       title,
       year,
-      error: data?.Error || "Details not available",
+      error: message,
       plot: null,
       poster: null,
-      // Return basic structure so modal can still display
     });
   }
-
-  return NextResponse.json({
-    title: data.Title || title,
-    year: data.Year ? parseInt(data.Year) : year,
-    rated: data.Rated,
-    released: data.Released,
-    runtime: data.Runtime,
-    genre: data.Genre,
-    director: data.Director,
-    writer: data.Writer,
-    actors: data.Actors,
-    plot: data.Plot,
-    language: data.Language,
-    country: data.Country,
-    awards: data.Awards,
-    poster: data.Poster && data.Poster !== "N/A" ? data.Poster : null,
-    ratings: data.Ratings || [],
-    metascore: data.Metascore,
-    imdbRating: data.imdbRating,
-    imdbVotes: data.imdbVotes,
-    imdbID: data.imdbID,
-    boxOffice: data.BoxOffice,
-    production: data.Production,
-  });
 }
 

@@ -73,21 +73,39 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
         
         if (cancelled) return;
         
+        // Always try to parse JSON, even if status is not ok
+        // The API now returns 200 even with errors
+        const contentType = res.headers.get("content-type");
+        if (!contentType?.includes("application/json")) {
+          throw new Error("Invalid response type");
+        }
+        
         const data = await res.json();
         
         if (cancelled) return;
         
-        if (data) {
+        // Always set details if we have data, even if it contains an error
+        // This allows the modal to display basic info (title, year)
+        if (data && data.title) {
           setDetails(data);
           if (data.error) {
             setError(data.error);
           }
         } else {
+          // If no data at all, show error
           setError("Failed to load movie details");
         }
       } catch (err) {
         if (!cancelled) {
           console.error("Movie details fetch error:", err);
+          // Even on error, try to show basic info
+          setDetails({
+            title: movie.title,
+            year: movie.year,
+            error: err instanceof Error ? err.message : "Failed to load movie details",
+            plot: null,
+            poster: movie.poster || null,
+          });
           setError("Failed to load movie details");
         }
       } finally {
@@ -193,25 +211,34 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
                   ) : details.error ? (
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold text-white mb-2">Overview</h3>
-                      <p className="text-neutral-400 italic">Plot summary not available from OMDb API.</p>
+                      <p className="text-neutral-400 italic">Plot summary not available from TMDb or OMDb API.</p>
                       {error && (
                         <p className="text-xs text-amber-400 mt-2">{error}</p>
                       )}
                     </div>
                   ) : null}
 
-                  <MovieDetailsGrid
-                    director={details.director}
-                    writer={details.writer}
-                    language={details.language}
-                    country={details.country}
-                    boxOffice={details.boxOffice}
-                    production={details.production}
-                  />
+                  {(details.director || details.writer || details.language || details.country || details.boxOffice || details.production) && (
+                    <MovieDetailsGrid
+                      director={details.director}
+                      writer={details.writer}
+                      language={details.language}
+                      country={details.country}
+                      boxOffice={details.boxOffice}
+                      production={details.production}
+                    />
+                  )}
 
-                  <MovieCast actors={details.actors} />
+                  {details.actors && <MovieCast actors={details.actors} />}
 
-                  <MovieAwards awards={details.awards} />
+                  {details.awards && <MovieAwards awards={details.awards} />}
+                </div>
+              </div>
+            ) : error ? (
+              <div className="flex min-h-[400px] items-center justify-center">
+                <div className="text-center">
+                  <p className="text-neutral-400 mb-2">{error}</p>
+                  <p className="text-sm text-neutral-500">Movie: {movie.title}{movie.year ? ` (${movie.year})` : ""}</p>
                 </div>
               </div>
             ) : (

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 
 type Props = {
   title: string;
@@ -68,6 +69,13 @@ function PosterComponent({ title, year, poster, className, ratio = "16/9", onErr
       try {
         const url = `/api/poster?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}`;
         const res = await fetch(url, { cache: "force-cache" });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const contentType = res.headers.get("content-type");
+        if (!contentType?.includes("application/json")) {
+          throw new Error("Invalid response type");
+        }
         const data = await res.json();
         const result = data?.poster || null;
         if (alive) {
@@ -109,14 +117,16 @@ function PosterComponent({ title, year, poster, className, ratio = "16/9", onErr
   };
 
   return (
-    <div className={className} style={{ aspectRatio: ratio }}>
+    <div className={className} style={{ aspectRatio: ratio, position: "relative" }}>
       {src ? (
-        <img
+        <Image
           src={src}
           alt={`${title} poster`}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          fill
+          className="object-cover"
           onError={handleError}
           loading="lazy"
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-white/5 text-xs text-neutral-400">

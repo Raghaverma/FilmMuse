@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import { getUserRatings } from "@/lib/auth-client";
@@ -37,6 +38,13 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
         setLoading(true);
         const url = `/api/poster?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}`;
         const res = await fetch(url, { cache: "force-cache" });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const contentType = res.headers.get("content-type");
+        if (!contentType?.includes("application/json")) {
+          throw new Error("Invalid response type");
+        }
         const data = await res.json();
         if (alive && data?.poster) {
           setSrc(data.poster);
@@ -70,24 +78,25 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
           style={{ aspectRatio: "2 / 3" }}
         >
         {src ? (
-          <motion.img
-            src={src}
-            alt={title}
-            className="w-full h-full object-cover"
+          <motion.div
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            onError={(e) => {
-              // Suppress 404 errors in console
-              const img = e.currentTarget;
-              if (img.src && !img.src.includes('data:')) {
-                // Only log if it's not already a placeholder
+            className="relative w-full h-full"
+          >
+            <Image
+              src={src}
+              alt={title}
+              fill
+              className="object-cover"
+              onError={() => {
                 console.debug(`Poster not available for: ${title}`);
-              }
-              setSrc(null);
-            }}
-            loading="lazy"
-          />
+                setSrc(null);
+              }}
+              loading="lazy"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            />
+          </motion.div>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-neutral-500 bg-white/5">
             {loading ? (

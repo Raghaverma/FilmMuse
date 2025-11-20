@@ -55,6 +55,10 @@ export default function SearchPage() {
     try {
       const res = await fetch("/api/movie/random");
       if (!res.ok) throw new Error("Failed to get random movie");
+      const contentType = res.headers.get("content-type");
+      if (!contentType?.includes("application/json")) {
+        throw new Error("Invalid response type");
+      }
       const movie = await res.json();
       setRandomMovie(movie);
       setIsRandomModalOpen(true);
@@ -109,23 +113,23 @@ export default function SearchPage() {
         />
 
         <div className="flex items-center gap-2 mb-4">
-          <Button
-            type="button"
-            variant={view === "grid" ? "default" : "secondary"}
-            className={view === "grid" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
-            onClick={() => setView("grid")}
-          >
-            Grid
-          </Button>
-          <Button
-            type="button"
-            variant={view === "list" ? "default" : "secondary"}
-            className={view === "list" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
-            onClick={() => setView("list")}
-          >
-            List
-          </Button>
-        </div>
+            <Button
+              type="button"
+              variant={view === "grid" ? "default" : "secondary"}
+              className={view === "grid" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
+              onClick={() => setView("grid")}
+            >
+              Grid
+            </Button>
+            <Button
+              type="button"
+              variant={view === "list" ? "default" : "secondary"}
+              className={view === "list" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
+              onClick={() => setView("list")}
+            >
+              List
+            </Button>
+          </div>
 
         {error && (
           <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3">
@@ -150,25 +154,25 @@ export default function SearchPage() {
               genre={genre}
               query={query}
               onClearFilters={() => {
-                setGenre("");
-                setQuery("");
-                handleClear();
-              }}
+                    setGenre("");
+                    setQuery("");
+                    handleClear();
+                  }}
             />
           ) : (
             <>
               <SearchResults view={view} results={results} loading={loading} onUpdate={handleUpdate} />
 
-              {nextOffset !== null && !loading && (
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    type="button"
-                    onClick={handleLoadMore}
-                    className="bg-white/10 hover:bg-white/15 text-neutral-200"
-                  >
-                    Load more
-                  </Button>
-                </div>
+          {nextOffset !== null && !loading && (
+            <div className="mt-6 flex justify-center">
+              <Button
+                type="button"
+                onClick={handleLoadMore}
+                className="bg-white/10 hover:bg-white/15 text-neutral-200"
+              >
+                Load more
+              </Button>
+            </div>
               )}
             </>
           )}

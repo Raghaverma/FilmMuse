@@ -119,12 +119,15 @@ function shuffleArray<T>(array: T[]): T[] {
  * 5. Apply diversity: limit movies per genre to ensure variety
  * 6. Return top recommendations
  */
+import { validateRequest, recommendationsSchema } from "@/lib/validation";
+
 export async function POST(req: Request) {
   initOnce();
   
   try {
     const body = await req.json();
-    const { watchlist = [], liked = [] } = body;
+    const validated = validateRequest(recommendationsSchema, body);
+    const { watchlist = [], liked = [] } = validated;
     
     // Combine watchlist and liked movies
     const userMovies = [...watchlist, ...liked];

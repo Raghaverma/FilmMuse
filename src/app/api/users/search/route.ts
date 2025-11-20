@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { validateRequest, userSearchSchema } from "@/lib/validation";
 
 // Initialize Firebase Admin
 if (getApps().length === 0) {
@@ -41,9 +42,12 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get("q") || "";
+    const params = validateRequest(userSearchSchema, {
+      q: searchParams.get("q") || "",
+    });
+    const query = params.q;
 
-    if (!query || query.length < 2) {
+    if (query.length < 2) {
       return NextResponse.json({ users: [] });
     }
 

@@ -1,5 +1,6 @@
 // src/app/api/search/route.ts
 import { NextResponse } from "next/server";
+import { validateRequest, movieSearchSchema } from "@/lib/validation";
 import moviesRaw from "@/data/movies.index.json";
 
 /**
@@ -95,11 +96,19 @@ function rankAndSort(pool: Row[], qn: string): Row[] {
 export async function GET(req: Request) {
   initOnce();
 
-  const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") || "";
-  const genre = searchParams.get("genre") || "";
-  const limit = parseNum(searchParams.get("limit"), 30, 1, 100);
-  const offset = parseNum(searchParams.get("offset"), 0, 0, 1000000);
+  try {
+    const { searchParams } = new URL(req.url);
+    const params = {
+      q: searchParams.get("q") || undefined,
+      genre: searchParams.get("genre") || undefined,
+      limit: searchParams.get("limit") || undefined,
+      offset: searchParams.get("offset") || undefined,
+    };
+    const validated = validateRequest(movieSearchSchema, params);
+    const q = validated.q || "";
+    const genre = validated.genre || "";
+    const limit = validated.limit;
+    const offset = validated.offset;
 
   let pool: Row[] = ROWS;
   if (genre) {
@@ -123,10 +132,14 @@ export async function GET(req: Request) {
     poster: m.poster ?? null, // may be null → client can lazy-load via /api/poster
   }));
 
-  return NextResponse.json({
-    items,
-    total,
-    nextOffset: offset + limit < total ? offset + limit : null,
-    source: "index",
-  });
+    return NextResponse.json({
+      items,
+      total,
+      nextOffset: offset + limit < total ? offset + limit : null,
+      source: "index",
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Invalid request";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }

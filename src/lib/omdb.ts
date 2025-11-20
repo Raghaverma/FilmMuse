@@ -102,6 +102,15 @@ export async function fetchOmdbOnce(title: string, year?: number): Promise<OMDb 
 
     try {
       const res = await fetchWithTimeout(url, 4000);
+      if (!res.ok) {
+        setCache(key, null);
+        return null;
+      }
+      const contentType = res.headers.get("content-type");
+      if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+        setCache(key, null);
+        return null;
+      }
       const data = (await res.json()) as OMDb;
       if (data?.Response === "True") {
         setCache(key, data);

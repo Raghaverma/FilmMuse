@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { validateRequest, followSchema } from "@/lib/validation";
 
 // Initialize Firebase Admin
 if (getApps().length === 0) {
@@ -40,9 +41,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { targetUserId } = await request.json();
-    if (!targetUserId || uid === targetUserId) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    const body = await request.json();
+    const validated = validateRequest(followSchema, body);
+    const { targetUserId } = validated;
+    
+    if (uid === targetUserId) {
+      return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400 });
     }
 
     const followId = `${uid}_${targetUserId}`;
@@ -98,8 +102,8 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const targetUserId = searchParams.get("targetUserId");
-    if (!targetUserId) {
-      return NextResponse.json({ error: "Missing targetUserId" }, { status: 400 });
+    if (!targetUserId || targetUserId.length < 1 || targetUserId.length > 128) {
+      return NextResponse.json({ error: "Invalid targetUserId" }, { status: 400 });
     }
 
     const followId = `${uid}_${targetUserId}`;

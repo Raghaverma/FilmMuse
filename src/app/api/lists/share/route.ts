@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { validateRequest, shareListSchema, removeAccessSchema } from "@/lib/validation";
 
 // Initialize Firebase Admin
 if (getApps().length === 0) {
@@ -40,9 +41,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { listId, targetUserId, isPublic } = await request.json();
-    if (!listId) {
-      return NextResponse.json({ error: "Missing listId" }, { status: 400 });
+    const body = await request.json();
+    if (body.userIds && Array.isArray(body.userIds)) {
+      const validated = validateRequest(shareListSchema, body);
+      const { listId, userIds } = validated;
+      
+      const userDataDoc = await db.collection("userData").doc(uid).get();
+      if (!userDataDoc.exists()) {
+        return NextResponse.json({ error: "User data not found" }, { status: 404 });
+      }
+
+      const userData = userDataDoc.data();
+      const list = userData?.customLists?.[listId];
+
+      if (!list) {
+        return NextResponse.json({ error: "List not found" }, { status: 404 });
+      }
+
+      if (list.ownerId !== uid) {
+        return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+      }
+
+      list.sharedWith = [...new Set([...list.sharedWith, ...userIds])];
+      list.updatedAt = new Date();
+
+      await db.collection("userData").doc(uid).update({
+        [`customLists.${listId}`]: list,
+        updatedAt: new Date(),
+      });
+
+      return NextResponse.json({ success: true, list });
+    }
+    
+    const { listId, targetUserId, isPublic } = body;
+    if (!listId || (listId.length < 1 || listId.length > 128)) {
+      return NextResponse.json({ error: "Invalid listId" }, { status: 400 });
     }
 
     const userDataDoc = await db.collection("userData").doc(uid).get();
@@ -91,12 +124,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const listId = searchParams.get("listId");
-    const targetUserId = searchParams.get("targetUserId");
-
-    if (!listId || !targetUserId) {
-      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
-    }
+    const params = {
+      listId: searchParams.get("listId"),
+      userId: searchParams.get("targetUserId"),
+    };
+    const validated = validateRequest(removeAccessSchema, params);
+    const { listId, userId: targetUserId } = validated;
 
     const userDataDoc = await db.collection("userData").doc(uid).get();
     if (!userDataDoc.exists()) {

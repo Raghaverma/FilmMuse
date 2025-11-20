@@ -1,0 +1,9 @@
+# Default owners for everything in the repo
+* @filmmuse/maintainers
+
+# Specific paths
+/src/app/api/ @filmmuse/backend-team
+/src/components/ @filmmuse/frontend-team
+/src/lib/firebase/ @filmmuse/backend-team
+*.md @filmmuse/docs-team
+

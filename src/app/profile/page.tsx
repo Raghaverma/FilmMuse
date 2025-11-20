@@ -293,8 +293,8 @@ export default function ProfilePage() {
                 onEditClick={setEditingList}
                 onDeleteClick={handleDeleteList}
                 onShareClick={handleShareList}
-                onUpdate={refreshData}
-              />
+                                onUpdate={refreshData}
+                              />
             )}
             {activeTab === "ratings" && (
               <RatingsTab ratings={ratings} onRemoveRating={handleRemoveRating} />
