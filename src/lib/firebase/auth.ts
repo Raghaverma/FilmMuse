@@ -28,10 +28,8 @@ export async function signupWithEmail(
   username: string
 ): Promise<User> {
   try {
-    // Normalize email
     const normalizedEmail = email.trim().toLowerCase();
     
-    // Create user with Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       normalizedEmail,
@@ -39,15 +37,12 @@ export async function signupWithEmail(
     );
     const user = userCredential.user;
 
-    // Update display name
     try {
       await updateProfile(user, { displayName: username.trim() });
     } catch (profileError) {
       console.warn("Failed to update display name:", profileError);
-      // Continue even if display name update fails
     }
 
-    // Create user profile in Firestore
     const userProfile: UserProfile = {
       uid: user.uid,
       email: normalizedEmail,
@@ -60,10 +55,8 @@ export async function signupWithEmail(
       await setDoc(doc(db, "users", user.uid), userProfile);
     } catch (firestoreError) {
       console.error("Failed to create user profile in Firestore:", firestoreError);
-      // Don't throw - user is created in Auth, profile can be created later
     }
 
-    // Initialize user data collections
     try {
       await setDoc(doc(db, "userData", user.uid), {
         watchlist: [],
@@ -76,13 +69,11 @@ export async function signupWithEmail(
       });
     } catch (firestoreError) {
       console.error("Failed to initialize user data:", firestoreError);
-      // Don't throw - user is created, data can be initialized later
     }
 
     return user;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Failed to create account";
-    // Preserve Firebase error codes
     if (errorMessage.includes("auth/")) {
       throw new Error(errorMessage);
     }
@@ -103,7 +94,6 @@ export async function loginWithEmail(
     return userCredential.user;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Failed to sign in";
-    // Firebase error codes are in the format "auth/error-code"
     if (errorMessage.includes("auth/invalid-credential") || errorMessage.includes("auth/user-not-found") || errorMessage.includes("auth/wrong-password")) {
       throw new Error("auth/invalid-credential");
     }
@@ -137,7 +127,6 @@ export function onAuthChange(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
 }
 
-// Google Sign-In
 const googleProvider = new GoogleAuthProvider();
 
 export async function signInWithGoogle(): Promise<User> {
@@ -145,11 +134,9 @@ export async function signInWithGoogle(): Promise<User> {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
 
-    // Check if user profile exists in Firestore
     const userDoc = await getDoc(doc(db, "users", user.uid));
     
     if (!userDoc.exists()) {
-      // First time Google sign-in - create user profile
       const username = user.displayName || user.email?.split("@")[0] || "User";
       
       const userProfile: UserProfile = {
@@ -162,7 +149,6 @@ export async function signInWithGoogle(): Promise<User> {
 
       await setDoc(doc(db, "users", user.uid), userProfile);
 
-      // Initialize user data collections
       await setDoc(doc(db, "userData", user.uid), {
         watchlist: [],
         liked: [],

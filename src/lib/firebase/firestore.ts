@@ -19,7 +19,6 @@ import {
 import { db } from "./config";
 import { auth } from "./config";
 
-// Types
 export interface MovieItem {
   id: string;
   title: string;
@@ -27,20 +26,16 @@ export interface MovieItem {
   poster?: string | null;
 }
 
-// Helper function to sanitize movie objects for Firestore
-// Firestore doesn't allow undefined values, so we convert them to null or remove them
 function sanitizeMovieItem(movie: MovieItem): MovieItem {
   const sanitized: MovieItem = {
     id: movie.id,
     title: movie.title,
   };
   
-  // Only include year if it's defined and not null
   if (movie.year !== undefined && movie.year !== null) {
     sanitized.year = movie.year;
   }
   
-  // Always include poster, defaulting to null if undefined
   sanitized.poster = movie.poster ?? null;
   
   return sanitized;
@@ -75,15 +70,13 @@ export interface UserData {
   activity: any[];
 }
 
-// Helper to sanitize movie arrays (removes undefined values)
 function sanitizeMovieArray(movies: any[]): MovieItem[] {
   if (!Array.isArray(movies)) return [];
   return movies
-    .filter((m) => m && m.id && m.title) // Filter out invalid entries
+    .filter((m) => m && m.id && m.title)
     .map((m) => sanitizeMovieItem(m));
 }
 
-// User Data Operations
 export async function getUserData(uid: string): Promise<UserData> {
   const userDataDoc = await getDoc(doc(db, "userData", uid));
   if (userDataDoc.exists()) {
@@ -96,7 +89,6 @@ export async function getUserData(uid: string): Promise<UserData> {
       activity: data.activity || [],
     };
   }
-  // Initialize if doesn't exist
   const initialData: UserData = {
     watchlist: [],
     liked: [],
@@ -123,7 +115,6 @@ export async function getUserCustomLists(uid?: string): Promise<CustomList[]> {
   const userId = uid || auth.currentUser?.uid;
   if (!userId) return [];
   const userData = await getUserData(userId);
-  // Sanitize movies in custom lists
   return Object.values(userData.customLists).map((list) => ({
     ...list,
     movies: sanitizeMovieArray(list.movies || []),
@@ -147,7 +138,6 @@ export async function updateUserData(
   });
 }
 
-// Watchlist Operations
 export async function addToWatchlist(movie: MovieItem): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error("Not authenticated");
@@ -190,7 +180,6 @@ export async function removeFromLiked(movieId: string): Promise<void> {
   await updateUserData(user.uid, { liked: userData.liked });
 }
 
-// Ratings Operations
 export async function rateMovie(
   movieId: string,
   movieTitle: string,
@@ -223,7 +212,6 @@ export async function removeRating(movieId: string): Promise<void> {
   await updateUserData(user.uid, { ratings: userData.ratings });
 }
 
-// Custom Lists Operations
 export async function createCustomList(
   name: string,
   description?: string
@@ -327,7 +315,6 @@ export async function removeMovieFromCustomList(
   await updateUserData(user.uid, { customLists: userData.customLists });
 }
 
-// Share list with specific user
 export async function shareListWithUser(
   listId: string,
   targetUserId: string
@@ -348,7 +335,6 @@ export async function shareListWithUser(
   }
 }
 
-// Remove user from shared list
 export async function unshareListWithUser(
   listId: string,
   targetUserId: string
@@ -367,7 +353,6 @@ export async function unshareListWithUser(
   await updateUserData(user.uid, { customLists: userData.customLists });
 }
 
-// Get shared lists for a user (lists shared with them or public lists)
 export async function getSharedLists(userId: string): Promise<CustomList[]> {
   const allUsersSnapshot = await getDocs(collection(db, "userData"));
   const sharedLists: CustomList[] = [];
@@ -381,7 +366,6 @@ export async function getSharedLists(userId: string): Promise<CustomList[]> {
           list.sharedWith.includes(userId) ||
           list.ownerId === userId
         ) {
-          // Sanitize movies in shared lists
           sharedLists.push({
             ...list,
             movies: sanitizeMovieArray(list.movies || []),

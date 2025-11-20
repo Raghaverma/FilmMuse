@@ -71,33 +71,28 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
     loadData();
   }, [user]);
 
-  // Calculate menu position when opening
   React.useEffect(() => {
     if (isMenuOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const menuWidth = 192; // w-48 = 12rem = 192px
-      const menuHeight = 200; // Approximate height
-      const padding = 8; // mt-2 = 8px
+      const menuWidth = 192;
+      const menuHeight = 200;
+      const padding = 8;
       
       let right = window.innerWidth - rect.right;
       let top = rect.bottom + padding;
       
-      // Adjust if menu would go off right edge
       if (right < menuWidth) {
         right = window.innerWidth - rect.left;
       }
       
-      // Adjust if menu would go off bottom edge
       if (top + menuHeight > window.innerHeight) {
         top = rect.top - menuHeight - padding;
       }
       
-      // Ensure menu doesn't go off left edge
       if (right > window.innerWidth - menuWidth) {
         right = window.innerWidth - menuWidth - padding;
       }
       
-      // Ensure menu doesn't go off top edge
       if (top < padding) {
         top = padding;
       }
@@ -107,8 +102,6 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setMenuPosition(null);
     }
   }, [isMenuOpen]);
-
-  // Close menu when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (

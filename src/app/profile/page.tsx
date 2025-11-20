@@ -11,6 +11,7 @@ import {
   deleteCustomList,
   getUserRatings,
   removeRating,
+  type MovieRating,
 } from "@/lib/firebase/firestore";
 import { useAuth } from "@/lib/firebase/auth-context";
 import MovieCard from "@/components/MovieCard";
@@ -34,7 +35,7 @@ export default function ProfilePage() {
   const { user, userProfile, loading: authLoading } = useAuth();
   const [watchlist, setWatchlist] = React.useState<{ watchlist: Array<{ id: string; title: string; year?: number; poster?: string | null }>; liked: Array<{ id: string; title: string; year?: number; poster?: string | null }> }>({ watchlist: [], liked: [] });
   const [customLists, setCustomLists] = React.useState<Array<{ id: string; name: string; description?: string; createdAt: number; movies: Array<{ id: string; title: string; year?: number; poster?: string | null }>; sharedWith?: string[]; isPublic?: boolean }>>([]);
-  const [ratings, setRatings] = React.useState<Record<string, { movieId: string; movieTitle: string; movieYear?: number; moviePoster?: string | null; rating: number; ratedAt: number }>>({});
+  const [ratings, setRatings] = React.useState<Record<string, MovieRating>>({});
   const [activeTab, setActiveTab] = React.useState<"watchlist" | "liked" | "lists" | "ratings">("watchlist");
   const [showCreateListDialog, setShowCreateListDialog] = React.useState(false);
   const [editingList, setEditingList] = React.useState<string | null>(null);
@@ -163,16 +164,13 @@ export default function ProfilePage() {
     }
 
     try {
-      // Create a temporary list for sharing
       const tempList = await createCustomList(name, `Shared ${name.toLowerCase()}`);
       
-      // Add all movies to the list
       const { addMovieToCustomList } = await import("@/lib/firebase/firestore");
       for (const movie of movies) {
         await addMovieToCustomList(tempList.id, movie);
       }
       
-      // Open share dialog
       setShareDialog({
         open: true,
         listId: tempList.id,
@@ -521,7 +519,7 @@ export default function ProfilePage() {
                               ))}
                             </div>
                             <div className="text-xs text-neutral-500 mt-1">
-                              Rated {new Date(rating.ratedAt).toLocaleDateString()}
+                              Rated {new Date(typeof rating.ratedAt === 'number' ? rating.ratedAt : rating.ratedAt.toMillis?.() || Date.now()).toLocaleDateString()}
                             </div>
                             <button
                               onClick={() => handleRemoveRating(movieId)}

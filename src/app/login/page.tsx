@@ -23,7 +23,6 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Redirect if already logged in
   React.useEffect(() => {
     if (user) {
       router.replace(nextUrl);
@@ -56,7 +55,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    // Basic validation
     if (!email.trim()) {
       setError("Please enter your email address.");
       return;
