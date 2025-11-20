@@ -59,8 +59,9 @@ export default function FollowButton({ targetUserId, className }: FollowButtonPr
         setFollowing(true);
         toast.success("Following");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update follow status");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update follow status";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

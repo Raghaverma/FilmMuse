@@ -145,8 +145,9 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setWatchlist({ watchlist: userData.watchlist, liked: userData.liked });
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update watchlist");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update watchlist";
+      toast.error(message);
     }
   };
 
@@ -169,8 +170,9 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setWatchlist({ watchlist: userData.watchlist, liked: userData.liked });
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update favorites");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update favorites";
+      toast.error(message);
     }
   };
 
@@ -192,8 +194,9 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
         setShowRatingDialog(false);
         setIsMenuOpen(false);
         onUpdate?.();
-      } catch (error: any) {
-        toast.error(error.message || "Failed to rate movie");
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to rate movie";
+        toast.error(message);
       }
     }
   };
@@ -211,8 +214,9 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setShowListDialog(false);
       setIsMenuOpen(false);
       onUpdate?.();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add to list");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to add to list";
+      toast.error(message);
     }
   };
 

@@ -73,8 +73,9 @@ export default function ShareListDialog({
       toast.success("List shared");
       onUpdate();
       loadSharedUsers();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to share list");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to share list";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -87,8 +88,9 @@ export default function ShareListDialog({
       toast.success("Access removed");
       onUpdate();
       setSharedUsers(sharedUsers.filter((u) => u.uid !== userId));
-    } catch (error: any) {
-      toast.error(error.message || "Failed to remove access");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to remove access";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -100,8 +102,9 @@ export default function ShareListDialog({
       await updateCustomList(listId, { isPublic: !isPublic });
       toast.success(isPublic ? "List is now private" : "List is now public");
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update list");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update list";
+      toast.error(message);
     } finally {
       setUpdatingPublic(false);
     }
