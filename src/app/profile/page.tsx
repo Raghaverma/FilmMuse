@@ -24,7 +24,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Star, Plus, Edit, Trash2, Film } from "lucide-react";
+import { Star, Plus, Edit, Trash2, Film, Share2 } from "lucide-react";
+import ShareListDialog from "@/components/ShareListDialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 
@@ -32,13 +33,20 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, userProfile, loading: authLoading } = useAuth();
   const [watchlist, setWatchlist] = React.useState<{ watchlist: Array<{ id: string; title: string; year?: number; poster?: string | null }>; liked: Array<{ id: string; title: string; year?: number; poster?: string | null }> }>({ watchlist: [], liked: [] });
-  const [customLists, setCustomLists] = React.useState<Array<{ id: string; name: string; description?: string; createdAt: number; movies: Array<{ id: string; title: string; year?: number; poster?: string | null }> }>>([]);
+  const [customLists, setCustomLists] = React.useState<Array<{ id: string; name: string; description?: string; createdAt: number; movies: Array<{ id: string; title: string; year?: number; poster?: string | null }>; sharedWith?: string[]; isPublic?: boolean }>>([]);
   const [ratings, setRatings] = React.useState<Record<string, { movieId: string; movieTitle: string; movieYear?: number; moviePoster?: string | null; rating: number; ratedAt: number }>>({});
   const [activeTab, setActiveTab] = React.useState<"watchlist" | "liked" | "lists" | "ratings">("watchlist");
   const [showCreateListDialog, setShowCreateListDialog] = React.useState(false);
   const [editingList, setEditingList] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [deleteConfirm, setDeleteConfirm] = React.useState<{ isOpen: boolean; listId: string | null; listName: string }>({ isOpen: false, listId: null, listName: "" });
+  const [shareDialog, setShareDialog] = React.useState<{ open: boolean; listId: string | null; listName: string; sharedWith: string[]; isPublic: boolean }>({ 
+    open: false, 
+    listId: null, 
+    listName: "", 
+    sharedWith: [], 
+    isPublic: false 
+  });
 
   React.useEffect(() => {
     if (authLoading) return;
@@ -58,7 +66,9 @@ export default function ProfilePage() {
           name: l.name,
           description: l.description,
           createdAt: typeof l.createdAt === 'number' ? l.createdAt : Date.now(),
-          movies: l.movies
+          movies: l.movies,
+          sharedWith: l.sharedWith || [],
+          isPublic: l.isPublic || false
         })));
         const userRatings = await getUserRatings(user.uid);
         setRatings(userRatings);
@@ -84,7 +94,9 @@ export default function ProfilePage() {
         name: l.name,
         description: l.description,
         createdAt: typeof l.createdAt === 'number' ? l.createdAt : Date.now(),
-        movies: l.movies
+        movies: l.movies,
+        sharedWith: l.sharedWith || [],
+        isPublic: l.isPublic || false
       })));
       const userRatings = await getUserRatings(user.uid);
       setRatings(userRatings);
@@ -142,6 +154,47 @@ export default function ProfilePage() {
     } catch (error: any) {
       toast.error(error.message || "Failed to remove rating");
     }
+  };
+
+  const handleShareCollection = async (name: string, movies: Array<{ id: string; title: string; year?: number; poster?: string | null }>) => {
+    if (movies.length === 0) {
+      toast.error("Cannot share an empty collection");
+      return;
+    }
+
+    try {
+      // Create a temporary list for sharing
+      const tempList = await createCustomList(name, `Shared ${name.toLowerCase()}`);
+      
+      // Add all movies to the list
+      const { addMovieToCustomList } = await import("@/lib/firebase/firestore");
+      for (const movie of movies) {
+        await addMovieToCustomList(tempList.id, movie);
+      }
+      
+      // Open share dialog
+      setShareDialog({
+        open: true,
+        listId: tempList.id,
+        listName: tempList.name,
+        sharedWith: tempList.sharedWith || [],
+        isPublic: tempList.isPublic || false,
+      });
+      
+      await refreshData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create shareable list");
+    }
+  };
+
+  const handleShareList = (list: { id: string; name: string; sharedWith?: string[]; isPublic?: boolean }) => {
+    setShareDialog({
+      open: true,
+      listId: list.id,
+      listName: list.name,
+      sharedWith: list.sharedWith || [],
+      isPublic: list.isPublic || false,
+    });
   };
 
   if (authLoading || isLoading || !user || !userProfile) {
@@ -232,6 +285,22 @@ export default function ProfilePage() {
             >
               Ratings ({Object.keys(ratings).length})
             </button>
+            {(activeTab === "watchlist" || activeTab === "liked") && (
+              <Button
+                onClick={() => {
+                  const listName = activeTab === "watchlist" ? "My Watchlist" : "My Liked Movies";
+                  const movies = activeTab === "watchlist" ? watchlist.watchlist : watchlist.liked;
+                  
+                  // Create a temporary list for sharing
+                  handleShareCollection(listName, movies);
+                }}
+                className="ml-auto bg-emerald-400 text-black hover:bg-emerald-300"
+                size="sm"
+              >
+                <Share2 className="h-4 w-4 mr-1" />
+                Share {activeTab === "watchlist" ? "Watchlist" : "Liked"}
+              </Button>
+            )}
             {activeTab === "lists" && (
               <Button
                 onClick={() => setShowCreateListDialog(true)}
@@ -352,6 +421,13 @@ export default function ProfilePage() {
                             <p className="text-xs text-neutral-500 mt-1">{list.movies.length} movies</p>
                           </div>
                           <div className="flex gap-2">
+                            <button
+                              onClick={() => handleShareList(list)}
+                              className="p-2 hover:bg-white/10 rounded"
+                              title="Share list"
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </button>
                             <button
                               onClick={() => setEditingList(list.id)}
                               className="p-2 hover:bg-white/10 rounded"
@@ -492,6 +568,18 @@ export default function ProfilePage() {
         onCancel={() => setDeleteConfirm({ isOpen: false, listId: null, listName: "" })}
         variant="danger"
       />
+
+      {shareDialog.listId && (
+        <ShareListDialog
+          open={shareDialog.open}
+          onClose={() => setShareDialog({ open: false, listId: null, listName: "", sharedWith: [], isPublic: false })}
+          listId={shareDialog.listId}
+          listName={shareDialog.listName}
+          currentSharedWith={shareDialog.sharedWith}
+          isPublic={shareDialog.isPublic}
+          onUpdate={refreshData}
+        />
+      )}
     </motion.main>
   );
 }

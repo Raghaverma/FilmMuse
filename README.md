@@ -36,6 +36,7 @@ A modern, intelligent movie discovery platform that learns your preferences and 
 - **User Accounts**: Secure authentication with Firebase (email/password and Google Sign-In)
 - **User Profiles**: View and manage your profile with username and email
 - **Follow System**: Follow other users and see their movie preferences
+- **Collection Sharing**: Share your watchlist, liked movies, or custom lists with specific users or make them public
 - **List Sharing**: Share your custom lists with specific users or make them public
 - **Custom Lists**: Create and manage personalized movie collections
 - **Activity History**: Track your movie-related activities
