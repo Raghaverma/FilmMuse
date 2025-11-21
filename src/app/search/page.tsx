@@ -10,6 +10,7 @@ import SearchForm from "@/components/search/SearchForm";
 import SearchStatus from "@/components/search/SearchStatus";
 import SearchResults from "@/components/search/SearchResults";
 import EmptySearchState from "@/components/search/EmptySearchState";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { useSearch } from "@/hooks/useSearch";
 
 type Movie = {
@@ -81,8 +82,9 @@ export default function SearchPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-neutral-100">
+    <main className="min-h-screen bg-background text-foreground dark:bg-[#0a0a0a] dark:text-neutral-100">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <Breadcrumbs />
         <header className="mb-6 flex items-center justify-between">
           <Link href="/" aria-label="Go to Home">
             <Button type="button" className="bg-white/10 hover:bg-white/15 text-neutral-200">

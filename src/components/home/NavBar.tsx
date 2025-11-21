@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Film } from "lucide-react";
+import { Film, X, Menu } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/firebase/auth-context";
 import {
   Dialog,
@@ -39,7 +40,7 @@ export default function NavBar() {
     <>
       <header
         role="banner"
-        className="sticky top-0 z-50 border-b border-white/5 backdrop-blur supports-[backdrop-filter]:bg-black/40"
+        className="sticky top-0 z-50 border-b border-border backdrop-blur supports-[backdrop-filter]:bg-background/80 dark:border-white/5 dark:supports-[backdrop-filter]:bg-black/40"
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
@@ -54,20 +55,25 @@ export default function NavBar() {
           </Link>
           <nav
             aria-label="Primary"
-            className="hidden items-center gap-6 text-sm text-neutral-300 md:flex"
+            className="hidden items-center gap-4 text-sm text-foreground/70 dark:text-neutral-300 md:flex"
           >
             {user ? (
-              <Link href="/profile" className="hover:text-white">
-                Profile
-              </Link>
+              <>
+                <Link href="/profile" className="hover:text-white transition-colors">
+                  Profile
+                </Link>
+                <Link href="/search" className="hover:text-white transition-colors">
+                  Search
+                </Link>
+              </>
             ) : (
               <>
-                <button onClick={() => { setIsLogin(true); setShowAuthDialog(true); }} className="hover:text-white">
+                <button onClick={() => { setIsLogin(true); setShowAuthDialog(true); }} className="hover:text-white transition-colors">
                   Log in
                 </button>
                 <button 
                   onClick={() => { setIsLogin(false); setShowAuthDialog(true); }} 
-                  className="rounded-md border border-white/15 px-3 py-1.5 hover:bg-white/10"
+                  className="rounded-md border border-white/15 px-3 py-1.5 hover:bg-white/10 transition-colors"
                 >
                   Sign up
                 </button>
@@ -101,34 +107,127 @@ function MobileMenu({ user, setIsLogin, setShowAuthDialog }: {
   setIsLogin: (val: boolean) => void;
   setShowAuthDialog: (val: boolean) => void;
 }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleEscape);
+      return () => window.removeEventListener("keydown", handleEscape);
+    }
+  }, [isOpen]);
+
   return (
-    <details className="md:hidden">
-      <summary className="list-none">
-        <div
-          className="rounded-md border border-white/10 p-2"
-          role="button"
-          aria-label="Open menu"
-        >
-          <div className="space-y-1">
-            <div className="h-0.5 w-6 bg-neutral-400" />
-            <div className="h-0.5 w-6 bg-neutral-400" />
-            <div className="h-0.5 w-6 bg-neutral-400" />
-          </div>
-        </div>
-      </summary>
-      <div className="absolute left-0 right-0 mt-3 border-t border-white/10 bg-black/90 backdrop-blur">
-        <nav className="flex flex-col gap-3 px-4 py-4 text-sm" aria-label="Mobile">
-          {user ? (
-            <Link href="/profile">Profile</Link>
-          ) : (
-            <>
-              <button onClick={() => { setIsLogin(true); setShowAuthDialog(true); }}>Log in</button>
-              <button onClick={() => { setIsLogin(false); setShowAuthDialog(true); }}>Sign up</button>
-            </>
-          )}
-        </nav>
-      </div>
-    </details>
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="md:hidden rounded-md border border-white/10 p-2 hover:bg-white/10 transition-colors"
+        aria-label="Open menu"
+        aria-expanded={isOpen}
+      >
+        <Menu className="h-5 w-5 text-neutral-300" />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm md:hidden"
+              onClick={() => setIsOpen(false)}
+            />
+
+            {/* Slide-in menu */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 z-50 h-full w-80 max-w-[85vw] bg-[#0a0a0a] border-l border-white/10 shadow-2xl md:hidden"
+            >
+              <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
+                <span className="text-sm font-semibold text-neutral-200">Menu</span>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-md p-2 hover:bg-white/10 transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5 text-neutral-300" />
+                </button>
+              </div>
+
+              <nav className="flex flex-col p-4 gap-2" aria-label="Mobile">
+                {user ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsOpen(false)}
+                      className="rounded-lg px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-white/10 transition-colors"
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/search"
+                      onClick={() => setIsOpen(false)}
+                      className="rounded-lg px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-white/10 transition-colors"
+                    >
+                      Search
+                    </Link>
+                    <Link
+                      href="/logout"
+                      onClick={() => setIsOpen(false)}
+                      className="rounded-lg px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-white/10 transition-colors"
+                    >
+                      Logout
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsLogin(true);
+                        setShowAuthDialog(true);
+                        setIsOpen(false);
+                      }}
+                      className="rounded-lg px-4 py-3 text-left text-sm font-medium text-neutral-200 hover:bg-white/10 transition-colors"
+                    >
+                      Log in
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsLogin(false);
+                        setShowAuthDialog(true);
+                        setIsOpen(false);
+                      }}
+                      className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-left text-sm font-medium text-emerald-300 hover:bg-emerald-400/20 transition-colors"
+                    >
+                      Sign up
+                    </button>
+                  </>
+                )}
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

@@ -8,9 +8,11 @@ A modern film discovery platform that helps users find the perfect film for thei
 - **Watchlist Management**: Add, remove, and organize movies in personal watchlists
 - **Custom Lists**: Create and share custom movie lists with other users
 - **User Following**: Follow other users and discover their curated lists
-- **Fast Search**: Optimized search with genre filtering
+- **Fast Search**: Optimized search with autocomplete, genre filtering, and recent searches
 - **Movie Details**: Comprehensive movie information from TMDb API (with OMDb fallback)
 - **Movie Ratings**: Rate and review movies you've watched
+- **Theme Support**: Light, dark, and system theme preferences with smooth transitions
+- **Enhanced UI**: Stagger animations, micro-interactions, breadcrumbs, and improved loading states
 
 ## Tech Stack
 
@@ -22,6 +24,7 @@ A modern film discovery platform that helps users find the perfect film for thei
 - **Movie Data**: TMDb API (primary), OMDb API (fallback)
 - **UI Components**: Radix UI primitives
 - **Animations**: Framer Motion
+- **Theme System**: Custom theme provider with light/dark mode support
 
 ## Getting Started
 

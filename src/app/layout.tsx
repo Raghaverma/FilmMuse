@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/lib/firebase/auth-context";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import PageTransition from "@/components/PageTransition";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -72,8 +74,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const stored = localStorage.getItem('filmMuse_theme');
+                const theme = stored && ['light', 'dark', 'system'].includes(stored) ? stored : 'dark';
+                let resolved = 'dark';
+                if (theme === 'system') {
+                  resolved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+                } else {
+                  resolved = theme;
+                }
+                document.documentElement.classList.remove('light', 'dark');
+                document.documentElement.classList.add(resolved);
+              })();
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://m.media-amazon.com" />
@@ -98,24 +118,32 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ErrorBoundary>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </ThemeProvider>
         </ErrorBoundary>
         <Toaster
           position="bottom-right"
           toastOptions={{
-            duration: 3000,
+            duration: 4000,
             style: {
-              background: "#1a1a1a",
+              background: "rgba(10, 10, 10, 0.95)",
               color: "#fff",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              border: "1px solid rgba(16, 185, 129, 0.2)",
               borderRadius: "0.75rem",
+              padding: "1rem",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
             },
             success: {
               iconTheme: {
                 primary: "#10b981",
                 secondary: "#fff",
+              },
+              style: {
+                border: "1px solid rgba(16, 185, 129, 0.3)",
               },
             },
             error: {
@@ -123,7 +151,11 @@ export default function RootLayout({
                 primary: "#ef4444",
                 secondary: "#fff",
               },
+              style: {
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+              },
             },
+            className: "font-sans",
           }}
         />
       </body>

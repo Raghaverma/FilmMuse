@@ -21,6 +21,7 @@ import ShareListDialog from "@/components/ShareListDialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import { normalizeList } from "@/lib/profile-helpers";
+import { User, Film, Heart, Star, Palette } from "lucide-react";
 import CreateListDialog from "@/components/profile/CreateListDialog";
 import EditListDialog from "@/components/profile/EditListDialog";
 import TabButton from "@/components/profile/TabButton";
@@ -28,6 +29,9 @@ import WatchlistTab from "@/components/profile/WatchlistTab";
 import LikedTab from "@/components/profile/LikedTab";
 import ListsTab from "@/components/profile/ListsTab";
 import RatingsTab from "@/components/profile/RatingsTab";
+import { ProfileHeaderSkeleton } from "@/components/ui/skeleton";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -184,8 +188,10 @@ export default function ProfilePage() {
 
   if (authLoading || isLoading || !user || !userProfile) {
     return (
-      <main className="min-h-screen bg-[#0a0a0a] text-neutral-100 flex items-center justify-center">
-        <div className="text-neutral-400">Loading...</div>
+      <main className="min-h-screen bg-background text-foreground dark:bg-[#0a0a0a] dark:text-neutral-100">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <ProfileHeaderSkeleton />
+        </div>
       </main>
     );
   }
@@ -195,9 +201,10 @@ export default function ProfilePage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen bg-[#0a0a0a] text-neutral-100"
+      className="min-h-screen bg-background text-foreground dark:bg-[#0a0a0a] dark:text-neutral-100"
     >
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <Breadcrumbs />
         <motion.header 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -214,15 +221,57 @@ export default function ProfilePage() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_0_10px_rgba(255,255,255,0.05)]"
+          className="mb-6 rounded-2xl border border-border bg-gradient-to-br from-emerald-50/30 to-emerald-50/10 dark:from-white/5 dark:to-white/[0.02] p-6 shadow-sm dark:border-white/10 dark:shadow-[0_0_20px_rgba(16,185,129,0.1)] overflow-hidden relative"
         >
-          <h2 className="text-lg font-medium mb-2">User Information</h2>
-          <div className="grid gap-2 text-sm">
-            <div>
-              <span className="text-neutral-400">Username:</span> <span className="text-white">{userProfile.username}</span>
+          <div className="absolute inset-0 bg-[radial-gradient(600px_350px_at_30%_20%,rgba(16,185,129,0.08),transparent_60%)] dark:bg-[radial-gradient(600px_350px_at_30%_20%,rgba(16,185,129,0.1),transparent_60%)]" aria-hidden />
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="relative">
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-2xl font-bold text-black shadow-lg ring-4 ring-emerald-400/20">
+                  {userProfile.username.charAt(0).toUpperCase()}
+                </div>
+                <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-400 border-2 border-background dark:border-[#0a0a0a] flex items-center justify-center">
+                  <User className="h-3 w-3 text-black" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-semibold text-foreground mb-1">{userProfile.username}</h2>
+                <p className="text-sm text-muted-foreground">{userProfile.email}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <ThemeSwitcher inline />
+              </div>
             </div>
-            <div>
-              <span className="text-neutral-400">Email:</span> <span className="text-white">{userProfile.email}</span>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="rounded-lg bg-muted/50 p-4 border border-border dark:bg-white/5 dark:border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Film className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Watchlist</span>
+                </div>
+                <div className="text-2xl font-bold text-foreground">{watchlist.watchlist.length}</div>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-4 border border-border dark:bg-white/5 dark:border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="h-4 w-4 text-red-500 dark:text-red-400" />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Liked</span>
+                </div>
+                <div className="text-2xl font-bold text-foreground">{watchlist.liked.length}</div>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-4 border border-border dark:bg-white/5 dark:border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Film className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Lists</span>
+                </div>
+                <div className="text-2xl font-bold text-foreground">{customLists.length}</div>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-4 border border-border dark:bg-white/5 dark:border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Rated</span>
+                </div>
+                <div className="text-2xl font-bold text-foreground">{Object.keys(ratings).length}</div>
+              </div>
             </div>
           </div>
         </motion.section>

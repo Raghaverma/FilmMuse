@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { triggerActionFeedback, triggerSuccessFeedback, triggerErrorFeedback } from "@/lib/haptic-feedback";
 
 type MovieInteractionProps = {
   movie: MovieItem & { meta?: string };
@@ -128,15 +129,19 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
 
   const handleAddToWatchlist = async () => {
     if (!user) {
+      triggerErrorFeedback();
       toast.error("Please log in to add to watchlist");
       return;
     }
+    triggerActionFeedback();
     try {
       if (inWatchlist) {
         await removeFromWatchlist(movie.id);
+        triggerSuccessFeedback();
         toast.success("Removed from watchlist");
       } else {
         await addToWatchlist(movie);
+        triggerSuccessFeedback();
         toast.success("Added to watchlist 🍿", {
           icon: "📽️",
         });
@@ -146,6 +151,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setIsMenuOpen(false);
       onUpdate?.();
     } catch (error: unknown) {
+      triggerErrorFeedback();
       const message = error instanceof Error ? error.message : "Failed to update watchlist";
       toast.error(message);
     }
@@ -153,15 +159,19 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
 
   const handleAddToLiked = async () => {
     if (!user) {
+      triggerErrorFeedback();
       toast.error("Please log in to like movies");
       return;
     }
+    triggerActionFeedback();
     try {
       if (inLiked) {
         await removeFromLiked(movie.id);
+        triggerSuccessFeedback();
         toast.success("Removed from liked");
       } else {
         await addToLiked(movie);
+        triggerSuccessFeedback();
         toast.success("Added to favorites 💖", {
           icon: "❤️",
         });
@@ -171,6 +181,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       setIsMenuOpen(false);
       onUpdate?.();
     } catch (error: unknown) {
+      triggerErrorFeedback();
       const message = error instanceof Error ? error.message : "Failed to update favorites";
       toast.error(message);
     }
@@ -178,12 +189,15 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
 
   const handleRate = async () => {
     if (!user) {
+      triggerErrorFeedback();
       toast.error("Please log in to rate movies");
       return;
     }
     if (selectedRating > 0) {
+      triggerActionFeedback();
       try {
         await rateMovie(movie.id, movie.title, selectedRating, movie.year, movie.poster);
+        triggerSuccessFeedback();
         toast.success(`Rated ${movie.title} ${selectedRating} stars ⭐`);
         const userData = await getUserData(user.uid);
         setRatings(
@@ -195,6 +209,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
         setIsMenuOpen(false);
         onUpdate?.();
       } catch (error: unknown) {
+        triggerErrorFeedback();
         const message = error instanceof Error ? error.message : "Failed to rate movie";
         toast.error(message);
       }

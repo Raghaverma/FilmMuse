@@ -18,23 +18,23 @@ export default function Hero() {
             whileInView={prefersReduced ? undefined : { opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent text-4xl font-semibold tracking-tight sm:text-6xl"
+            className="bg-gradient-to-b from-foreground to-foreground/70 dark:from-white dark:to-neutral-300 bg-clip-text text-transparent text-4xl font-semibold tracking-tight sm:text-6xl"
           >
             Find the perfect film for your mood.
           </motion.h1>
-          <p className="mt-4 max-w-2xl text-neutral-400">
+          <p className="mt-4 max-w-2xl text-foreground/70 dark:text-neutral-400">
             FilmMuse learns what you like and curates watchlists and hidden
             gems — all without the endless scroll.
           </p>
           <div className="mt-8 w-full max-w-xl">
             <SearchBar />
           </div>
-          <div className="mt-10 grid grid-cols-2 gap-3 text-xs text-neutral-400 sm:grid-cols-3">
+          <div className="mt-10 grid grid-cols-2 gap-3 text-xs text-foreground/60 dark:text-neutral-400 sm:grid-cols-3">
             {["Mood graphs", "Smart lists", "Spoiler-free synopses"].map(
               (t) => (
                 <div
                   key={t}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1"
+                  className="rounded-full border border-border/50 bg-muted/50 dark:border-white/10 dark:bg-white/5 px-3 py-1"
                 >
                   {t}
                 </div>
