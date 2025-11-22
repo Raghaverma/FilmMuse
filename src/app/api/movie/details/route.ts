@@ -38,6 +38,7 @@ export async function GET(req: Request) {
         imdbID: tmdbData.imdbID,
         backdrop: tmdbData.backdrop,
         tagline: tmdbData.tagline,
+        watchProviders: tmdbData.watchProviders,
         // TMDb doesn't have these fields, leave undefined
         rated: undefined,
         released: undefined,

@@ -46,6 +46,19 @@ type TMDbMovieDetails = {
   };
 };
 
+type WatchProvider = {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+  display_priority: number;
+};
+
+type WatchProviders = {
+  flatrate?: WatchProvider[];
+  rent?: WatchProvider[];
+  buy?: WatchProvider[];
+};
+
 type TMDbMapped = {
   title: string;
   year?: number;
@@ -66,6 +79,8 @@ type TMDbMapped = {
   tagline?: string;
   budget?: number;
   revenue?: number;
+  tmdbId?: number;
+  watchProviders?: WatchProviders;
 };
 
 type CacheEntry = { value: TMDbMapped | null; at: number };
@@ -191,6 +206,7 @@ function mapTMDbToStandard(details: TMDbMovieDetails): TMDbMapped {
     tagline: details.tagline,
     budget: details.budget,
     revenue: details.revenue,
+    tmdbId: details.id,
   };
 }
 
@@ -274,6 +290,26 @@ export async function fetchTmdbOnce(
 
       // Step 4: Map to standard format
       const mapped = mapTMDbToStandard(detailsData);
+      
+      // Step 5: Fetch watch providers
+      try {
+        const providersUrl = `${API_BASE_URL}/movie/${bestMatch.id}/watch/providers?api_key=${KEY}`;
+        const providersRes = await fetchWithTimeout(providersUrl, 5000);
+        if (providersRes.ok) {
+          const providersContentType = providersRes.headers.get("content-type");
+          if (providersContentType?.includes("application/json") || providersContentType?.includes("text/json")) {
+            const providersData = await providersRes.json() as { results?: Record<string, WatchProviders> };
+            // Use US providers by default, or first available region
+            const usProviders = providersData.results?.US;
+            const firstRegion = providersData.results ? Object.values(providersData.results)[0] : undefined;
+            mapped.watchProviders = usProviders || firstRegion;
+          }
+        }
+      } catch (error) {
+        // Silently fail - watch providers are optional
+        console.debug("[tmdb] Failed to fetch watch providers:", error);
+      }
+      
       setCache(key, mapped);
       return mapped;
     } catch (error) {

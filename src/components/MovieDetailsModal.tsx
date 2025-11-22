@@ -10,6 +10,7 @@ import MovieRatings from "./movie-details/MovieRatings";
 import MovieDetailsGrid from "./movie-details/MovieDetailsGrid";
 import MovieCast from "./movie-details/MovieCast";
 import MovieAwards from "./movie-details/MovieAwards";
+import MovieWatchProviders from "./movie-details/MovieWatchProviders";
 
 type MovieDetails = {
   title: string;
@@ -32,6 +33,11 @@ type MovieDetails = {
   imdbVotes?: string;
   boxOffice?: string;
   production?: string;
+  watchProviders?: {
+    flatrate?: Array<{ provider_id: number; provider_name: string; logo_path: string; display_priority: number }>;
+    rent?: Array<{ provider_id: number; provider_name: string; logo_path: string; display_priority: number }>;
+    buy?: Array<{ provider_id: number; provider_name: string; logo_path: string; display_priority: number }>;
+  };
 };
 
 type Props = {
@@ -232,6 +238,8 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
                   {details.actors && <MovieCast actors={details.actors} />}
 
                   {details.awards && <MovieAwards awards={details.awards} />}
+
+                  <MovieWatchProviders watchProviders={details.watchProviders} />
                 </div>
               </div>
             ) : error ? (
