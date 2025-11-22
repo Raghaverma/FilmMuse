@@ -227,7 +227,25 @@ export default function ProfilePage() {
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
-                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-2xl font-bold text-black shadow-lg ring-4 ring-emerald-400/20">
+                {userProfile.photoURL ? (
+                  <img
+                    src={userProfile.photoURL}
+                    alt={userProfile.username}
+                    className="h-20 w-20 rounded-full object-cover shadow-lg ring-4 ring-emerald-400/20"
+                    onError={(e) => {
+                      // Fallback to initial if image fails to load
+                      const target = e.currentTarget;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) {
+                        fallback.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-2xl font-bold text-black shadow-lg ring-4 ring-emerald-400/20 ${userProfile.photoURL ? 'hidden' : ''}`}
+                >
                   {userProfile.username.charAt(0).toUpperCase()}
                 </div>
                 <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-400 border-2 border-background dark:border-[#0a0a0a] flex items-center justify-center">

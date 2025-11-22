@@ -11,13 +11,14 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "./config";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./config";
 
 export interface UserProfile {
   uid: string;
   email: string;
   username: string;
+  photoURL?: string | null;
   createdAt: any;
   updatedAt: any;
 }
@@ -137,12 +138,14 @@ export async function signInWithGoogle(): Promise<User> {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     
     if (!userDoc.exists()) {
+      // New user - create profile
       const username = user.displayName || user.email?.split("@")[0] || "User";
       
       const userProfile: UserProfile = {
         uid: user.uid,
         email: user.email?.toLowerCase() || "",
         username: username,
+        photoURL: user.photoURL || null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -158,11 +161,60 @@ export async function signInWithGoogle(): Promise<User> {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+    } else {
+      // Existing user - update photoURL if available from Google
+      const existingProfile = userDoc.data() as UserProfile;
+      if (user.photoURL && existingProfile.photoURL !== user.photoURL) {
+        await updateDoc(doc(db, "users", user.uid), {
+          photoURL: user.photoURL,
+          updatedAt: serverTimestamp(),
+        });
+      }
     }
 
     return user;
   } catch (error: unknown) {
+    // Handle Firebase Auth errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const firebaseError = error as { code: string; message: string };
+      
+      // Log the full error for debugging
+      console.error('Google sign-in error:', {
+        code: firebaseError.code,
+        message: firebaseError.message,
+        fullError: error
+      });
+      
+      if (firebaseError.code === 'auth/popup-blocked') {
+        throw new Error('Popups are blocked. Please allow popups for this site and try again.');
+      }
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in was cancelled. Please try again.');
+      }
+      if (firebaseError.code === 'auth/operation-not-allowed') {
+        throw new Error('Google sign-in is not enabled. Please enable it in Firebase Console under Authentication > Sign-in method.');
+      }
+      if (firebaseError.code === 'auth/internal-error') {
+        // Internal error can have various causes, not just disabled provider
+        const errorMsg = firebaseError.message || 'An internal error occurred';
+        if (errorMsg.includes('operation-not-allowed') || errorMsg.includes('not enabled')) {
+          throw new Error('Google sign-in is not enabled. Please enable it in Firebase Console under Authentication > Sign-in method.');
+        }
+        // Check if it's a domain authorization issue
+        if (errorMsg.includes('domain') || errorMsg.includes('authorized')) {
+          throw new Error('This domain is not authorized. Please add localhost to authorized domains in Firebase Console > Authentication > Settings.');
+        }
+        throw new Error(`Google sign-in error: ${errorMsg}. Please check your Firebase configuration and try again.`);
+      }
+      if (firebaseError.code === 'auth/unauthorized-domain') {
+        throw new Error('This domain is not authorized. Please add localhost to authorized domains in Firebase Console > Authentication > Settings.');
+      }
+      
+      throw new Error(firebaseError.message || firebaseError.code);
+    }
+    
     const errorMessage = error instanceof Error ? error.message : "Failed to sign in with Google";
+    console.error('Unknown Google sign-in error:', error);
     throw new Error(errorMessage);
   }
 }

@@ -195,10 +195,10 @@ export async function rateMovie(
   userData.ratings[movieId] = {
     movieId,
     movieTitle,
-    movieYear,
-    moviePoster,
     rating,
     ratedAt: Date.now(),
+    ...(movieYear !== undefined && { movieYear }),
+    ...(moviePoster !== undefined && { moviePoster }),
   };
   await updateUserData(user.uid, { ratings: userData.ratings });
 }

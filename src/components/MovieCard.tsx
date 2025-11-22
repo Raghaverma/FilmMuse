@@ -143,7 +143,7 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
           
           {showInteraction && (
             <div 
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30 pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <MovieInteraction
@@ -172,7 +172,7 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 flex flex-col justify-end z-20"
+                className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 flex flex-col justify-end z-20 pointer-events-none"
                 onClick={(e) => e.stopPropagation()}
               >
                 {quickInfo.genres && quickInfo.genres.length > 0 && (
