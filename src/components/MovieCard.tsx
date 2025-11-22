@@ -15,9 +15,10 @@ type Props = {
   meta?: string;
   showInteraction?: boolean;
   onUpdate?: () => void;
+  onBeforeOpen?: () => void;
 };
 
-export default function MovieCard({ id, title, year, poster, meta, showInteraction = false, onUpdate }: Props) {
+export default function MovieCard({ id, title, year, poster, meta, showInteraction = false, onUpdate, onBeforeOpen }: Props) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [src, setSrc] = React.useState<string | null>(poster ?? null);
   const [loading, setLoading] = React.useState<boolean>(!poster);
@@ -103,7 +104,17 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="group relative rounded-2xl bg-neutral-900 border border-neutral-800 p-3 hover:border-emerald-400/30 transition-all duration-300 cursor-pointer"
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => {
+          if (onBeforeOpen) {
+            onBeforeOpen();
+            // Small delay to ensure parent modal closes before opening new one
+            setTimeout(() => {
+              setIsModalOpen(true);
+            }, 100);
+          } else {
+            setIsModalOpen(true);
+          }
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

@@ -11,6 +11,12 @@ import MovieDetailsGrid from "./movie-details/MovieDetailsGrid";
 import MovieCast from "./movie-details/MovieCast";
 import MovieAwards from "./movie-details/MovieAwards";
 import MovieWatchProviders from "./movie-details/MovieWatchProviders";
+import MovieVideos from "./movie-details/MovieVideos";
+import MovieSimilar from "./movie-details/MovieSimilar";
+import MovieReviews from "./movie-details/MovieReviews";
+import MovieFullCast from "./movie-details/MovieFullCast";
+import MovieCollection from "./movie-details/MovieCollection";
+import MovieKeywords from "./movie-details/MovieKeywords";
 
 type MovieDetails = {
   title: string;
@@ -38,6 +44,8 @@ type MovieDetails = {
     rent?: Array<{ provider_id: number; provider_name: string; logo_path: string; display_priority: number }>;
     buy?: Array<{ provider_id: number; provider_name: string; logo_path: string; display_priority: number }>;
   };
+  tmdbId?: number;
+  collectionId?: number;
 };
 
 type Props = {
@@ -237,9 +245,21 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
 
                   {details.actors && <MovieCast actors={details.actors} />}
 
+                  <MovieFullCast tmdbId={details.tmdbId} />
+
                   {details.awards && <MovieAwards awards={details.awards} />}
 
                   <MovieWatchProviders watchProviders={details.watchProviders} />
+
+                  <MovieVideos tmdbId={details.tmdbId} />
+
+                  <MovieSimilar tmdbId={details.tmdbId} onMovieClick={handleClose} />
+
+                  <MovieReviews tmdbId={details.tmdbId} />
+
+                  <MovieCollection collectionId={details.collectionId} onMovieClick={handleClose} />
+
+                  <MovieKeywords tmdbId={details.tmdbId} />
                 </div>
               </div>
             ) : error ? (

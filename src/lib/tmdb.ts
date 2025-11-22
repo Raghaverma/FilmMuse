@@ -40,6 +40,12 @@ type TMDbMovieDetails = {
   revenue?: number;
   status?: string;
   tagline?: string;
+  belongs_to_collection?: {
+    id: number;
+    name: string;
+    poster_path?: string | null;
+    backdrop_path?: string | null;
+  } | null;
   credits?: {
     cast?: Array<{ name: string; character?: string; order: number }>;
     crew?: Array<{ name: string; job: string }>;
@@ -81,6 +87,7 @@ type TMDbMapped = {
   revenue?: number;
   tmdbId?: number;
   watchProviders?: WatchProviders;
+  collectionId?: number;
 };
 
 type CacheEntry = { value: TMDbMapped | null; at: number };
@@ -207,6 +214,7 @@ function mapTMDbToStandard(details: TMDbMovieDetails): TMDbMapped {
     budget: details.budget,
     revenue: details.revenue,
     tmdbId: details.id,
+    collectionId: details.belongs_to_collection?.id,
   };
 }
 
@@ -360,6 +368,426 @@ export async function fetchTmdbPoster(
 
     return `${IMAGE_BASE_URL}/w500${bestMatch.poster_path}`;
   } catch {
+    return null;
+  }
+}
+
+// Additional TMDb API functions for new features
+
+export type TMDbVideo = {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+  published_at: string;
+};
+
+export type TMDbVideosResponse = {
+  results: TMDbVideo[];
+};
+
+export async function fetchMovieVideos(tmdbId: number): Promise<TMDbVideo[]> {
+  if (!KEY || !tmdbId) return [];
+  
+  try {
+    const url = `${API_BASE_URL}/movie/${tmdbId}/videos?api_key=${KEY}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return [];
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return [];
+    }
+    
+    const data = (await res.json()) as TMDbVideosResponse;
+    return data.results || [];
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch videos:", error);
+    return [];
+  }
+}
+
+export type TMDbSimilarMovie = {
+  id: number;
+  title: string;
+  release_date?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  vote_average?: number;
+  overview?: string;
+};
+
+export type TMDbSimilarResponse = {
+  results: TMDbSimilarMovie[];
+  page: number;
+  total_pages: number;
+  total_results: number;
+};
+
+export async function fetchSimilarMovies(tmdbId: number, page = 1): Promise<TMDbSimilarResponse | null> {
+  if (!KEY || !tmdbId) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/movie/${tmdbId}/similar?api_key=${KEY}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbSimilarResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch similar movies:", error);
+    return null;
+  }
+}
+
+export async function fetchRecommendedMovies(tmdbId: number, page = 1): Promise<TMDbSimilarResponse | null> {
+  if (!KEY || !tmdbId) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/movie/${tmdbId}/recommendations?api_key=${KEY}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbSimilarResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch recommendations:", error);
+    return null;
+  }
+}
+
+export type TMDbReview = {
+  id: string;
+  author: string;
+  author_details: {
+    name: string;
+    username: string;
+    avatar_path?: string | null;
+    rating?: number;
+  };
+  content: string;
+  created_at: string;
+  updated_at: string;
+  url: string;
+};
+
+export type TMDbReviewsResponse = {
+  results: TMDbReview[];
+  page: number;
+  total_pages: number;
+  total_results: number;
+};
+
+export async function fetchMovieReviews(tmdbId: number, page = 1): Promise<TMDbReviewsResponse | null> {
+  if (!KEY || !tmdbId) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/movie/${tmdbId}/reviews?api_key=${KEY}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbReviewsResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch reviews:", error);
+    return null;
+  }
+}
+
+export type TMDbCastMember = {
+  id: number;
+  name: string;
+  character?: string;
+  order: number;
+  profile_path?: string | null;
+  known_for_department?: string;
+};
+
+export type TMDbCrewMember = {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+  profile_path?: string | null;
+};
+
+export type TMDbCreditsResponse = {
+  cast: TMDbCastMember[];
+  crew: TMDbCrewMember[];
+};
+
+export async function fetchMovieCredits(tmdbId: number): Promise<TMDbCreditsResponse | null> {
+  if (!KEY || !tmdbId) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/movie/${tmdbId}/credits?api_key=${KEY}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbCreditsResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch credits:", error);
+    return null;
+  }
+}
+
+export type TMDbCollection = {
+  id: number;
+  name: string;
+  overview?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  parts?: Array<{
+    id: number;
+    title: string;
+    release_date?: string;
+    poster_path?: string | null;
+  }>;
+};
+
+export async function fetchCollection(collectionId: number): Promise<TMDbCollection | null> {
+  if (!KEY || !collectionId) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/collection/${collectionId}?api_key=${KEY}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbCollection;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch collection:", error);
+    return null;
+  }
+}
+
+export type TMDbKeyword = {
+  id: number;
+  name: string;
+};
+
+export type TMDbKeywordsResponse = {
+  keywords: TMDbKeyword[];
+};
+
+export async function fetchMovieKeywords(tmdbId: number): Promise<TMDbKeyword[]> {
+  if (!KEY || !tmdbId) return [];
+  
+  try {
+    const url = `${API_BASE_URL}/movie/${tmdbId}/keywords?api_key=${KEY}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return [];
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return [];
+    }
+    
+    const data = (await res.json()) as TMDbKeywordsResponse;
+    return data.keywords || [];
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch keywords:", error);
+    return [];
+  }
+}
+
+export type TMDbMovieListItem = {
+  id: number;
+  title: string;
+  release_date?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  vote_average?: number;
+  overview?: string;
+  genre_ids?: number[];
+};
+
+export type TMDbMovieListResponse = {
+  results: TMDbMovieListItem[];
+  page: number;
+  total_pages: number;
+  total_results: number;
+};
+
+export async function fetchTrendingMovies(timeWindow: "day" | "week" = "day", page = 1): Promise<TMDbMovieListResponse | null> {
+  if (!KEY) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/trending/movie/${timeWindow}?api_key=${KEY}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbMovieListResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch trending movies:", error);
+    return null;
+  }
+}
+
+export async function fetchPopularMovies(page = 1): Promise<TMDbMovieListResponse | null> {
+  if (!KEY) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/movie/popular?api_key=${KEY}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbMovieListResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch popular movies:", error);
+    return null;
+  }
+}
+
+export async function fetchNowPlayingMovies(page = 1): Promise<TMDbMovieListResponse | null> {
+  if (!KEY) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/movie/now_playing?api_key=${KEY}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbMovieListResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch now playing movies:", error);
+    return null;
+  }
+}
+
+export async function fetchUpcomingMovies(page = 1): Promise<TMDbMovieListResponse | null> {
+  if (!KEY) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/movie/upcoming?api_key=${KEY}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbMovieListResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch upcoming movies:", error);
+    return null;
+  }
+}
+
+export type TMDbGenre = {
+  id: number;
+  name: string;
+};
+
+export type TMDbGenresResponse = {
+  genres: TMDbGenre[];
+};
+
+export async function fetchGenres(): Promise<TMDbGenre[]> {
+  if (!KEY) return [];
+  
+  try {
+    const url = `${API_BASE_URL}/genre/movie/list?api_key=${KEY}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return [];
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return [];
+    }
+    
+    const data = (await res.json()) as TMDbGenresResponse;
+    return data.genres || [];
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch genres:", error);
+    return [];
+  }
+}
+
+export async function discoverMovies(params: {
+  genre?: number;
+  year?: number;
+  "vote_average.gte"?: number;
+  language?: string;
+  sort_by?: string;
+  page?: number;
+}): Promise<TMDbMovieListResponse | null> {
+  if (!KEY) return null;
+  
+  try {
+    const searchParams = new URLSearchParams();
+    searchParams.append("api_key", KEY);
+    
+    if (params.genre) searchParams.append("with_genres", params.genre.toString());
+    if (params.year) searchParams.append("year", params.year.toString());
+    if (params["vote_average.gte"]) searchParams.append("vote_average.gte", params["vote_average.gte"].toString());
+    if (params.language) searchParams.append("with_original_language", params.language);
+    if (params.sort_by) searchParams.append("sort_by", params.sort_by);
+    searchParams.append("page", (params.page || 1).toString());
+    
+    const url = `${API_BASE_URL}/discover/movie?${searchParams.toString()}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    return (await res.json()) as TMDbMovieListResponse;
+  } catch (error) {
+    console.debug("[tmdb] Failed to discover movies:", error);
     return null;
   }
 }

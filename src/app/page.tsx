@@ -21,6 +21,50 @@ const SectionDiscover = dynamic(() => import("@/components/home/SectionDiscover"
   ssr: false,
 });
 
+const TrendingMovies = dynamic(() => import("@/components/home/TrendingMovies"), {
+  loading: () => (
+    <section className="relative">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <MovieCardGridSkeleton count={4} />
+      </div>
+    </section>
+  ),
+  ssr: false,
+});
+
+const PopularMovies = dynamic(() => import("@/components/home/PopularMovies"), {
+  loading: () => (
+    <section className="relative">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <MovieCardGridSkeleton count={4} />
+      </div>
+    </section>
+  ),
+  ssr: false,
+});
+
+const NowPlayingMovies = dynamic(() => import("@/components/home/NowPlayingMovies"), {
+  loading: () => (
+    <section className="relative">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <MovieCardGridSkeleton count={4} />
+      </div>
+    </section>
+  ),
+  ssr: false,
+});
+
+const UpcomingMovies = dynamic(() => import("@/components/home/UpcomingMovies"), {
+  loading: () => (
+    <section className="relative">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <MovieCardGridSkeleton count={4} />
+      </div>
+    </section>
+  ),
+  ssr: false,
+});
+
 export default function Page() {
   return (
     <motion.main
@@ -34,6 +78,10 @@ export default function Page() {
       <NavBar />
       <Hero />
       <TrustBar />
+      <TrendingMovies />
+      <PopularMovies />
+      <NowPlayingMovies />
+      <UpcomingMovies />
       <SectionDiscover />
       <Footer />
     </motion.main>

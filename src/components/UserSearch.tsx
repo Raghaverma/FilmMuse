@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { searchUsers } from "@/lib/firebase/follows";
@@ -10,9 +11,11 @@ import { motion, AnimatePresence } from "framer-motion";
 interface UserSearchProps {
   onUserSelect?: (userId: string) => void;
   showFollowButton?: boolean;
+  navigateToProfile?: boolean;
 }
 
-export default function UserSearch({ onUserSelect, showFollowButton = false }: UserSearchProps) {
+export default function UserSearch({ onUserSelect, showFollowButton = false, navigateToProfile = true }: UserSearchProps) {
+  const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -73,7 +76,12 @@ export default function UserSearch({ onUserSelect, showFollowButton = false }: U
               <div
                 key={user.uid}
                 className="p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0"
-                onClick={() => onUserSelect?.(user.uid)}
+                onClick={() => {
+                  if (navigateToProfile) {
+                    router.push(`/profile?userId=${user.uid}`);
+                  }
+                  onUserSelect?.(user.uid);
+                }}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">

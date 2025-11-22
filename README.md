@@ -7,8 +7,10 @@ A modern film discovery platform that helps users find the perfect film for thei
 - **Personalized Recommendations**: AI-powered movie recommendations based on your watchlist and preferences
 - **Watchlist Management**: Add, remove, and organize movies in personal watchlists
 - **Custom Lists**: Create and share custom movie lists with other users
+- **Friends System**: Send friend requests, manage friendships, and view friends' profiles
 - **User Following**: Follow other users and discover their curated lists
 - **Fast Search**: Optimized search with autocomplete, genre filtering, and recent searches
+- **User Search**: Search for users by username or email to add as friends
 - **Movie Details**: Comprehensive movie information from TMDb API (with OMDb fallback)
 - **Movie Ratings**: Rate and review movies you've watched (1-5 stars)
 - **Authentication**: Email/Password and Google Sign-In support with profile picture sync
@@ -69,6 +71,13 @@ A modern film discovery platform that helps users find the perfect film for thei
    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
    
+   # Firebase Admin SDK (for server-side API routes - friends system, etc.)
+   # Get these from Firebase Console > Project Settings > Service Accounts
+   # Generate a new private key and use the values from the JSON file
+   FIREBASE_PROJECT_ID=your_project_id
+   FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+   
    # TMDb API Key (get one at https://www.themoviedb.org)
    TMDB_API_KEY=your_tmdb_api_key
    
@@ -78,6 +87,8 @@ A modern film discovery platform that helps users find the perfect film for thei
    # Site URL
    NEXT_PUBLIC_SITE_URL=http://localhost:3000
    ```
+   
+   **Note**: See [FIREBASE_ADMIN_SETUP.md](./FIREBASE_ADMIN_SETUP.md) for detailed instructions on setting up Firebase Admin SDK credentials.
 
 5. Run development server:
    ```bash
@@ -128,8 +139,9 @@ src/
 
 ### Firebase
 - **Authentication**: Email/Password and Google Sign-In
-- **Firestore**: User profiles, watchlists, ratings, and custom lists
+- **Firestore**: User profiles, watchlists, ratings, custom lists, and friends data
 - **Storage**: User profile pictures (synced from Google accounts)
+- **Admin SDK**: Server-side operations for friends system, user management, and secure API routes
 
 ## Performance & Optimization
 
@@ -158,6 +170,14 @@ src/
 
 ## Recent Updates
 
+### Friends System (Latest)
+- ✅ Complete friends system with friend requests, accept/reject, and friend management
+- ✅ User search functionality to find and add friends by username or email
+- ✅ Friend requests notification badge on profile page
+- ✅ View other users' profiles with friend request button
+- ✅ Optimized profile page loading with parallel data fetching and lazy loading
+- ✅ Firebase Admin SDK integration for secure server-side friend operations
+
 ### Authentication & User Experience
 - ✅ Added Google Sign-In support with profile picture synchronization
 - ✅ Fixed movie card hover interactions (3-dots menu now accessible)
@@ -173,6 +193,7 @@ src/
 - ✅ Fixed Firebase rating error when `movieYear` is undefined
 - ✅ Improved z-index layering for interactive elements
 - ✅ Better handling of optional fields in Firestore
+- ✅ Fixed profile page performance issues with optimized data loading
 
 ## Contributing
 

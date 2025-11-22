@@ -1,0 +1,24 @@
+import { NextResponse } from "next/server";
+import { fetchUpcomingMovies } from "@/lib/tmdb";
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+
+    const data = await fetchUpcomingMovies(page);
+    
+    if (!data) {
+      return NextResponse.json({ results: [], page: 1, total_pages: 0, total_results: 0 });
+    }
+    
+    return NextResponse.json(data);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch upcoming movies";
+    return NextResponse.json(
+      { error: message, results: [], page: 1, total_pages: 0, total_results: 0 },
+      { status: 500 }
+    );
+  }
+}
+
