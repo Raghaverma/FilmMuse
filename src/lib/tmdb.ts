@@ -163,8 +163,11 @@ function mapTMDbToStandard(details: TMDbMovieDetails): TMDbMapped {
     ?.map((c) => c.name)
     .join(", ");
 
+  // TMDb vote_average is already on a 0-10 scale, so we don't need to divide
+  // However, TMDb doesn't provide actual IMDb ratings - this is TMDb's own rating
+  // We'll use it but note that actual IMDb rating should come from OMDb when available
   const imdbRating = details.vote_average
-    ? (details.vote_average / 10).toFixed(1)
+    ? details.vote_average.toFixed(1)
     : undefined;
   const imdbVotes = details.vote_count?.toString();
 

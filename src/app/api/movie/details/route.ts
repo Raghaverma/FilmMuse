@@ -32,6 +32,7 @@ export async function GET(req: Request) {
         country: tmdbData.country,
         production: tmdbData.production,
         poster: tmdbData.poster,
+        // Use TMDb's rating as fallback, but prefer actual IMDb rating from OMDb
         imdbRating: tmdbData.imdbRating,
         imdbVotes: tmdbData.imdbVotes,
         imdbID: tmdbData.imdbID,
@@ -45,6 +46,24 @@ export async function GET(req: Request) {
         metascore: undefined,
         boxOffice: undefined,
       };
+      
+      // Try to get actual IMDb rating from OMDb if we have an IMDb ID
+      // This gives us the real IMDb rating instead of TMDb's vote_average
+      if (tmdbData.imdbID) {
+        try {
+          const omdbData = await fetchOmdbOnce(title, year);
+          if (omdbData && omdbData.Response === "True" && omdbData.imdbRating && omdbData.imdbRating !== "N/A") {
+            // Use actual IMDb rating from OMDb
+            data.imdbRating = omdbData.imdbRating;
+            data.imdbVotes = omdbData.imdbVotes;
+            data.metascore = omdbData.Metascore;
+            data.ratings = omdbData.Ratings || [];
+          }
+        } catch (error) {
+          // Silently fail - we already have TMDb data
+          console.debug("Failed to fetch OMDb data for IMDb rating:", error);
+        }
+      }
     } else {
       // Fallback to OMDb
       source = "omdb";
