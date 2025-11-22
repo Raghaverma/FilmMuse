@@ -198,3 +198,4 @@ export default function MovieReviews({ tmdbId }: MovieReviewsProps) {
   );
 }
 
+

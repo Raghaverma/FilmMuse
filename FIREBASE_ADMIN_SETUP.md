@@ -71,3 +71,4 @@ After adding the credentials:
 - Verify your Firebase project has Firestore enabled
 - Make sure the service account has proper permissions
 
+
