@@ -16,6 +16,13 @@ import { searchUsers } from "@/lib/firebase/follows";
 import { Share2, X, Globe, Lock } from "lucide-react";
 import { toast } from "react-hot-toast";
 
+interface SharedUser {
+  uid: string;
+  username?: string;
+  email?: string;
+  photoURL?: string | null;
+}
+
 interface ShareListDialogProps {
   open: boolean;
   onClose: () => void;
@@ -35,19 +42,11 @@ export default function ShareListDialog({
   isPublic,
   onUpdate,
 }: ShareListDialogProps) {
-  const [sharedUsers, setSharedUsers] = React.useState<any[]>([]);
+  const [sharedUsers, setSharedUsers] = React.useState<SharedUser[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [updatingPublic, setUpdatingPublic] = React.useState(false);
 
-  React.useEffect(() => {
-    if (open && currentSharedWith.length > 0) {
-      loadSharedUsers();
-    } else {
-      setSharedUsers([]);
-    }
-  }, [open, currentSharedWith]);
-
-  const loadSharedUsers = async () => {
+  const loadSharedUsers = React.useCallback(async () => {
     try {
       const users = await Promise.all(
         currentSharedWith.map(async (uid) => {
@@ -55,11 +54,19 @@ export default function ShareListDialog({
           return results.find((u) => u.uid === uid) || { uid, username: uid, email: "" };
         })
       );
-      setSharedUsers(users.filter(Boolean));
+      setSharedUsers(users.filter((u): u is SharedUser => Boolean(u)));
     } catch (error) {
       console.error("Error loading shared users:", error);
     }
-  };
+  }, [currentSharedWith]);
+
+  React.useEffect(() => {
+    if (open && currentSharedWith.length > 0) {
+      loadSharedUsers();
+    } else {
+      setSharedUsers([]);
+    }
+  }, [open, currentSharedWith, loadSharedUsers]);
 
   const handleShareWithUser = async (userId: string) => {
     if (currentSharedWith.includes(userId)) {
@@ -116,7 +123,7 @@ export default function ShareListDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
-            Share "{listName}"
+            Share &quot;{listName}&quot;
           </DialogTitle>
         </DialogHeader>
 

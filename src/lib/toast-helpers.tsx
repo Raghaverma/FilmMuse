@@ -11,7 +11,7 @@ export function showToastWithAction(
   action: ToastAction,
   _type: "success" | "error" | "default" = "default"
 ) {
-  const toastId = toast(
+  void toast(
     (t: Toast) => (
       <div className="flex items-center justify-between gap-4">
         <span className="text-sm">{message}</span>
@@ -40,6 +40,7 @@ export function showToastWithAction(
       },
     }
   );
+  // toastId is returned but not used - that's fine, toast is displayed
 }
 
 export function showSuccessToast(message: string, action?: ToastAction) {

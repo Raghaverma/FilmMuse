@@ -4,6 +4,14 @@ import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { validateRequest, userSearchSchema } from "@/lib/validation";
 
+interface UserSearchResult {
+  uid: string;
+  username?: string;
+  email?: string;
+  photoURL?: string | null;
+  [key: string]: unknown;
+}
+
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   initializeApp({
@@ -53,10 +61,10 @@ export async function GET(request: NextRequest) {
 
     const queryLower = query.toLowerCase().trim();
     const usersSnapshot = await db.collection("users").get();
-    const results: any[] = [];
+    const results: UserSearchResult[] = [];
 
     usersSnapshot.forEach((doc) => {
-      const userData = doc.data();
+      const userData = doc.data() as UserSearchResult;
       if (
         userData.username?.toLowerCase().includes(queryLower) ||
         userData.email?.toLowerCase().includes(queryLower)

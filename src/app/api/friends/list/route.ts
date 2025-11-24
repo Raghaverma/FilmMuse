@@ -3,6 +3,14 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 
+interface Friend {
+  userId: string;
+  username: string;
+  photoURL: string | null;
+  email: string;
+  friendsSince: number;
+}
+
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   initializeApp({
@@ -52,7 +60,7 @@ export async function GET(request: NextRequest) {
       q2.get(),
     ]);
 
-    const friends = [];
+    const friends: Friend[] = [];
 
     // Process user1 matches (user is user1)
     for (const docSnap of snapshot1.docs) {
@@ -91,7 +99,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Sort by friendsSince (newest first)
-    friends.sort((a: any, b: any) => b.friendsSince - a.friendsSince);
+    friends.sort((a, b) => b.friendsSince - a.friendsSince);
 
     return NextResponse.json({ friends });
   } catch (error: unknown) {

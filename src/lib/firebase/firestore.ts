@@ -62,18 +62,29 @@ export interface MovieRating {
   ratedAt: Timestamp | number;
 }
 
+interface ActivityItem {
+  type: string;
+  movieId?: string;
+  timestamp: Timestamp | number;
+  [key: string]: unknown;
+}
+
 export interface UserData {
   watchlist: MovieItem[];
   liked: MovieItem[];
   ratings: Record<string, MovieRating>;
   customLists: Record<string, CustomList>;
-  activity: any[];
+  activity: ActivityItem[];
 }
 
-function sanitizeMovieArray(movies: any[]): MovieItem[] {
+function sanitizeMovieArray(movies: unknown[]): MovieItem[] {
   if (!Array.isArray(movies)) return [];
   return movies
-    .filter((m) => m && m.id && m.title)
+    .filter((m): m is MovieItem => {
+      if (!m || typeof m !== "object") return false;
+      const movie = m as Partial<MovieItem>;
+      return typeof movie.id === "string" && typeof movie.title === "string";
+    })
     .map((m) => sanitizeMovieItem(m));
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, DocumentReference, DocumentSnapshot } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 
 // Initialize Firebase Admin
@@ -92,9 +92,10 @@ async function updateFriendCounts(userId1: string, userId2: string, delta: numbe
     statsRef2.get(),
   ]);
 
-  const updateStats = async (ref: any, doc: any) => {
+  const updateStats = async (ref: DocumentReference, doc: DocumentSnapshot) => {
     if (doc.exists) {
-      const currentCount = doc.data()?.friendsCount || 0;
+      const data = doc.data();
+      const currentCount = (data?.friendsCount as number | undefined) || 0;
       await ref.update({
         friendsCount: Math.max(0, currentCount + delta),
       });

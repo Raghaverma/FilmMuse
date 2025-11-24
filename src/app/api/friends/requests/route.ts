@@ -3,6 +3,17 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 
+interface FriendRequest {
+  id: string;
+  requesterId: string;
+  requesterUsername: string;
+  requesterPhotoURL: string | null;
+  receiverId: string;
+  status: string;
+  createdAt: number;
+  respondedAt?: number;
+}
+
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   initializeApp({
@@ -45,7 +56,7 @@ export async function GET(request: NextRequest) {
       .where("status", "==", "pending");
 
     const snapshot = await q.get();
-    const requests = [];
+    const requests: FriendRequest[] = [];
 
     for (const docSnap of snapshot.docs) {
       const data = docSnap.data();
@@ -69,7 +80,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Sort by creation date (newest first)
-    requests.sort((a: any, b: any) => b.createdAt - a.createdAt);
+    requests.sort((a, b) => b.createdAt - a.createdAt);
 
     return NextResponse.json({ requests });
   } catch (error: unknown) {

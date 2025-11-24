@@ -13,6 +13,7 @@ import {
   arrayUnion,
   arrayRemove,
   increment,
+  type Timestamp,
 } from "firebase/firestore";
 import { db } from "./config";
 import { auth } from "./config";
@@ -20,7 +21,7 @@ import { auth } from "./config";
 export interface FollowRelationship {
   followerId: string;
   followingId: string;
-  createdAt: any;
+  createdAt: Timestamp | number;
 }
 
 export interface UserStats {
@@ -175,14 +176,22 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   return { followersCount: 0, followingCount: 0 };
 }
 
+interface UserSearchResult {
+  uid: string;
+  username?: string;
+  email?: string;
+  photoURL?: string | null;
+  [key: string]: unknown;
+}
+
 // Search users by username
-export async function searchUsers(searchQuery: string): Promise<any[]> {
+export async function searchUsers(searchQuery: string): Promise<UserSearchResult[]> {
   const usersSnapshot = await getDocs(collection(db, "users"));
   const queryLower = searchQuery.toLowerCase().trim();
-  const results: any[] = [];
+  const results: UserSearchResult[] = [];
 
   usersSnapshot.forEach((doc) => {
-    const userData = doc.data();
+    const userData = doc.data() as UserSearchResult;
     if (
       userData.username?.toLowerCase().includes(queryLower) ||
       userData.email?.toLowerCase().includes(queryLower)

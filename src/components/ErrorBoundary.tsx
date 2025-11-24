@@ -3,6 +3,7 @@
 import * as React from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { errorHandler } from "@/lib/error-handler";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -25,7 +26,6 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const { errorHandler } = require("@/lib/error-handler");
     errorHandler.error("React Error Boundary caught an error", error, {
       componentStack: errorInfo.componentStack,
     });

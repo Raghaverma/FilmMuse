@@ -12,6 +12,8 @@ import {
   where,
   serverTimestamp,
   Timestamp,
+  type DocumentReference,
+  type DocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "./config";
 import { auth } from "./config";
@@ -371,9 +373,10 @@ async function updateFriendCounts(userId1: string, userId2: string, delta: numbe
     getDoc(statsRef2),
   ]);
 
-  const updateStats = async (ref: any, doc: any) => {
-    if (doc.exists()) {
-      const currentCount = doc.data()?.friendsCount || 0;
+  const updateStats = async (ref: DocumentReference, docSnap: DocumentSnapshot) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const currentCount = (data?.friendsCount as number | undefined) || 0;
       await updateDoc(ref, {
         friendsCount: Math.max(0, currentCount + delta),
       });

@@ -33,7 +33,7 @@ class ErrorHandler {
     }
   }
 
-  log(level: ErrorLevel, message: string, error?: unknown, context?: ErrorContext) {
+  async log(level: ErrorLevel, message: string, error?: unknown, context?: ErrorContext) {
     const errorContext: ErrorContext = {
       timestamp: new Date().toISOString(),
       ...context,
@@ -56,11 +56,11 @@ class ErrorHandler {
 
     if (this.initialized && typeof window !== "undefined") {
       try {
-        const { captureMessage, captureException } = require("@sentry/nextjs");
+        const sentry = await import("@sentry/nextjs");
         if (error instanceof Error) {
-          captureException(error, { level, extra: errorContext });
+          sentry.captureException(error, { level, extra: errorContext });
         } else {
-          captureMessage(message, { level, extra: errorContext });
+          sentry.captureMessage(message, { level, extra: errorContext });
         }
       } catch {
         // Sentry not available
@@ -78,15 +78,15 @@ class ErrorHandler {
   }
 
   error(message: string, error?: unknown, context?: ErrorContext) {
-    this.log("error", message, error, context);
+    void this.log("error", message, error, context);
   }
 
   warning(message: string, error?: unknown, context?: ErrorContext) {
-    this.log("warning", message, error, context);
+    void this.log("warning", message, error, context);
   }
 
   info(message: string, context?: ErrorContext) {
-    this.log("info", message, undefined, context);
+    void this.log("info", message, undefined, context);
   }
 }
 

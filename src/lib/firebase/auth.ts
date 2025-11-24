@@ -11,7 +11,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "./config";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, type Timestamp } from "firebase/firestore";
 import { db } from "./config";
 
 export interface UserProfile {
@@ -19,8 +19,8 @@ export interface UserProfile {
   email: string;
   username: string;
   photoURL?: string | null;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: Timestamp | number;
+  updatedAt: Timestamp | number;
 }
 
 export async function signupWithEmail(

@@ -18,7 +18,7 @@ let ROWS: Movie[] = [];
 const GENRE_MAP = new Map<string, Movie[]>(); // genre -> movies[]
 const MOVIE_BY_ID = new Map<string, Movie>(); // id -> movie (O(1) lookup)
 const MOVIE_BY_TITLE_YEAR = new Map<string, Movie>(); // "title|year" -> movie (O(1) lookup)
-let GENRE_FREQUENCY = new Map<string, number>(); // genre -> count (for IDF weighting)
+const GENRE_FREQUENCY = new Map<string, number>(); // genre -> count (for IDF weighting)
 
 /**
  * Initialize data structures once on first request

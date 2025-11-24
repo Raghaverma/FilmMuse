@@ -4,6 +4,29 @@ import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { validateRequest, shareListSchema, removeAccessSchema } from "@/lib/validation";
 
+interface CustomList {
+  id?: string;
+  name: string;
+  description?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  movies?: unknown[];
+  ownerId: string;
+  isPublic?: boolean;
+  sharedWith?: string[];
+  [key: string]: unknown;
+}
+
+interface SharedList extends CustomList {
+  ownerUid: string;
+  owner?: Record<string, unknown> | null;
+}
+
+interface UserData {
+  customLists?: Record<string, CustomList>;
+  [key: string]: unknown;
+}
+
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   initializeApp({
@@ -171,19 +194,20 @@ export async function GET(request: NextRequest) {
     }
 
     const allUsersSnapshot = await db.collection("userData").get();
-    const sharedLists: any[] = [];
+    const sharedLists: SharedList[] = [];
 
     allUsersSnapshot.forEach((doc) => {
-      const userData = doc.data();
+      const userData = doc.data() as UserData;
       if (userData.customLists) {
-        Object.values(userData.customLists).forEach((list: any) => {
+        Object.values(userData.customLists).forEach((list) => {
+          const listData = list as CustomList;
           if (
-            list.isPublic ||
-            list.sharedWith?.includes(uid) ||
-            list.ownerId === uid
+            listData.isPublic ||
+            listData.sharedWith?.includes(uid) ||
+            listData.ownerId === uid
           ) {
             sharedLists.push({
-              ...list,
+              ...listData,
               ownerUid: doc.id,
             });
           }
@@ -193,7 +217,7 @@ export async function GET(request: NextRequest) {
 
     // Get owner usernames
     const ownerIds = [...new Set(sharedLists.map((l) => l.ownerUid))];
-    const owners: Record<string, any> = {};
+    const owners: Record<string, Record<string, unknown>> = {};
     await Promise.all(
       ownerIds.map(async (id) => {
         const ownerDoc = await db.collection("users").doc(id).get();

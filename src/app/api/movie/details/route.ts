@@ -3,6 +3,37 @@ import { fetchTmdbOnce } from "@/lib/tmdb";
 import { fetchOmdbOnce } from "@/lib/omdb";
 import { validateRequest, movieDetailsSchema } from "@/lib/validation";
 
+interface MovieDetails {
+  title: string;
+  year?: number;
+  runtime?: string | number;
+  genre?: string;
+  director?: string;
+  writer?: string;
+  actors?: string;
+  plot?: string;
+  language?: string;
+  country?: string;
+  production?: string;
+  poster?: string | null;
+  imdbRating?: string | number;
+  imdbVotes?: string | number;
+  imdbID?: string;
+  backdrop?: string;
+  tagline?: string;
+  watchProviders?: unknown;
+  tmdbId?: number;
+  collectionId?: number;
+  rated?: string;
+  released?: string;
+  awards?: string;
+  ratings?: unknown[];
+  metascore?: string;
+  boxOffice?: string;
+  source?: string;
+  error?: string;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -13,7 +44,7 @@ export async function GET(req: Request) {
     const { title, year } = params;
 
     // Try TMDb first (primary source)
-    let data: any = null;
+    let data: MovieDetails | null = null;
     let source = "tmdb";
     
     const tmdbData = await fetchTmdbOnce(title, year);

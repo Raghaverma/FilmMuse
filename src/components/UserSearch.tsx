@@ -7,6 +7,13 @@ import { searchUsers } from "@/lib/firebase/follows";
 import { User, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface UserSearchResult {
+  uid: string;
+  username?: string;
+  email?: string;
+  photoURL?: string | null;
+}
+
 interface UserSearchProps {
   onUserSelect?: (userId: string) => void;
   showFollowButton?: boolean;
@@ -14,7 +21,7 @@ interface UserSearchProps {
 
 export default function UserSearch({ onUserSelect, showFollowButton = false }: UserSearchProps) {
   const [query, setQuery] = React.useState("");
-  const [results, setResults] = React.useState<any[]>([]);
+  const [results, setResults] = React.useState<UserSearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [debounceTimer, setDebounceTimer] = React.useState<NodeJS.Timeout | null>(null);
 
