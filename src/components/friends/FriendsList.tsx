@@ -90,3 +90,5 @@ export default function FriendsList({ onUpdate }: FriendsListProps) {
 }
 
 
+
+
