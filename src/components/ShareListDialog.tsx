@@ -9,7 +9,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import UserSearch from "./UserSearch";
 import { shareListWithUser, unshareListWithUser, updateCustomList } from "@/lib/firebase/firestore";
 import { searchUsers } from "@/lib/firebase/follows";
@@ -153,10 +152,7 @@ export default function ShareListDialog({
           {/* Share with specific users */}
           <div>
             <label className="mb-2 block text-sm text-neutral-300">Share with users</label>
-            <UserSearch
-              onUserSelect={handleShareWithUser}
-              showFollowButton={false}
-            />
+            <UserSearch onUserSelect={handleShareWithUser} />
           </div>
 
           {/* Shared users list */}

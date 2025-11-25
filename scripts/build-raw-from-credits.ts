@@ -68,7 +68,7 @@ async function main() {
   let skippedNoId = 0;
   let skippedNoTitle = 0;
   let colIdName = "movie_id"; // default for Kaggle TMDB credits
-  let colTitleName = "title";
+  const colTitleName = "title";
 
   const out = fs.createWriteStream(OUT_JSONL, { encoding: "utf8" });
 

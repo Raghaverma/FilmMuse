@@ -32,6 +32,21 @@ type IndexMovie = {
   imdb_id?: string;
 };
 
+type CacheEntry = {
+  Poster?: string;
+  imdbID?: string;
+  miss?: boolean;
+};
+
+type CacheMap = Record<string, CacheEntry>;
+
+type OmdbResponse = {
+  Response: "True" | "False";
+  Poster?: string;
+  imdbID?: string;
+  [key: string]: unknown;
+};
+
 const cwd = process.cwd();
 const RAW_PATH = path.join(cwd, "src", "data", "movies.raw.jsonl");
 const OUT_PATH = path.join(cwd, "src", "data", "movies.index.json");
@@ -53,16 +68,16 @@ function normTitle(s: string) {
     .trim();
 }
 
-async function loadCache(): Promise<Record<string, any>> {
+async function loadCache(): Promise<CacheMap> {
   try {
     const txt = await fsp.readFile(CACHE_PATH, "utf8");
-    return JSON.parse(txt);
+    return JSON.parse(txt) as CacheMap;
   } catch {
     return {};
   }
 }
 
-async function saveCache(cache: Record<string, any>) {
+async function saveCache(cache: CacheMap) {
   await fsp.mkdir(path.dirname(CACHE_PATH), { recursive: true });
   await fsp.writeFile(CACHE_PATH, JSON.stringify(cache, null, 2), "utf8");
 }
@@ -81,7 +96,7 @@ async function* iterateRaw(): AsyncGenerator<RawMovie> {
   }
 }
 
-async function fetchOmdbByTitle(title: string, year?: number | null) {
+async function fetchOmdbByTitle(title: string, year?: number | null): Promise<OmdbResponse | null> {
   // Try exact title + year first (if we have year), then fallback to title only
   const queries = year
     ? [
@@ -93,7 +108,7 @@ async function fetchOmdbByTitle(title: string, year?: number | null) {
   for (const url of queries) {
     const res = await fetch(url);
     if (!res.ok) continue;
-    const json: any = await res.json();
+    const json = (await res.json()) as OmdbResponse;
     if (json && json.Response === "True") return json;
   }
   return null;
@@ -132,8 +147,9 @@ async function main() {
       if (!entry) {
         // throttle: ~4 req/sec (adjust if you hit limits)
         await sleep(250);
-        entry = await fetchOmdbByTitle(title, year);
-        cache[cacheKey] = entry ? { Poster: entry.Poster, imdbID: entry.imdbID } : { miss: true };
+        const omdbEntry = await fetchOmdbByTitle(title, year);
+        entry = omdbEntry ? { Poster: omdbEntry.Poster, imdbID: omdbEntry.imdbID } : { miss: true };
+        cache[cacheKey] = entry;
         // Persist cache every ~200 items to be safe
         if (total % 200 === 0) await saveCache(cache);
       }

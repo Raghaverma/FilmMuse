@@ -8,8 +8,7 @@ interface ToastAction {
 
 export function showToastWithAction(
   message: string,
-  action: ToastAction,
-  _type: "success" | "error" | "default" = "default"
+  action: ToastAction
 ) {
   void toast(
     (t: Toast) => (
@@ -45,7 +44,7 @@ export function showToastWithAction(
 
 export function showSuccessToast(message: string, action?: ToastAction) {
   if (action) {
-    showToastWithAction(message, action, "success");
+    showToastWithAction(message, action);
   } else {
     toast.success(message, {
       duration: 3000,
@@ -63,7 +62,7 @@ export function showSuccessToast(message: string, action?: ToastAction) {
 
 export function showErrorToast(message: string, action?: ToastAction) {
   if (action) {
-    showToastWithAction(message, action, "error");
+    showToastWithAction(message, action);
   } else {
     toast.error(message, {
       duration: 4000,

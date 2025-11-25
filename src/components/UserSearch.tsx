@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { searchUsers } from "@/lib/firebase/follows";
 import { User, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,18 +15,17 @@ interface UserSearchResult {
 
 interface UserSearchProps {
   onUserSelect?: (userId: string) => void;
-  showFollowButton?: boolean;
 }
 
-export default function UserSearch({ onUserSelect, showFollowButton = false }: UserSearchProps) {
+export default function UserSearch({ onUserSelect }: UserSearchProps) {
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<UserSearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
-  const [debounceTimer, setDebounceTimer] = React.useState<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
 
     if (query.length < 2) {
@@ -35,7 +33,7 @@ export default function UserSearch({ onUserSelect, showFollowButton = false }: U
       return;
     }
 
-    const timer = setTimeout(async () => {
+    debounceTimerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         const users = await searchUsers(query);
@@ -48,10 +46,10 @@ export default function UserSearch({ onUserSelect, showFollowButton = false }: U
       }
     }, 300);
 
-    setDebounceTimer(timer);
-
     return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
   }, [query]);
 

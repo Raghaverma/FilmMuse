@@ -72,7 +72,7 @@ function parseNum(n: string | null, fallback: number, min: number, max: number) 
   return Math.max(min, Math.min(max, v));
 }
 
-// Relevance ranking: prefix > substring; stable alphabetical within tiers
+// Relevance ranking: prefix > token match > substring; stable alphabetical within tiers
 function rankAndSort(pool: Row[], qn: string): Row[] {
   if (!qn) {
     // No query → alphabetical
@@ -80,17 +80,32 @@ function rankAndSort(pool: Row[], qn: string): Row[] {
   }
 
   const prefix: Row[] = [];
+  const tokenMatch: Row[] = [];
   const sub: Row[] = [];
+  const qnTokens = tokenizeTitle(qn);
 
   for (const r of pool) {
-    if (r._lcTitle.startsWith(qn)) prefix.push(r);
-    else if (r._lcTitle.includes(qn)) sub.push(r);
+    if (r._lcTitle.startsWith(qn)) {
+      prefix.push(r);
+    } else {
+      // Check if any token matches
+      const hasTokenMatch = qnTokens.some(qt => 
+        r._tokens.some(rt => rt.startsWith(qt) || rt.includes(qt))
+      );
+      
+      if (hasTokenMatch) {
+        tokenMatch.push(r);
+      } else if (r._lcTitle.includes(qn)) {
+        sub.push(r);
+      }
+    }
   }
 
   const byAlpha = (a: Row, b: Row) => a.title.localeCompare(b.title);
   prefix.sort(byAlpha);
+  tokenMatch.sort(byAlpha);
   sub.sort(byAlpha);
-  return prefix.concat(sub);
+  return prefix.concat(tokenMatch).concat(sub);
 }
 
 export async function GET(req: Request) {

@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     const genres = await fetchGenres();
     return NextResponse.json({ genres });

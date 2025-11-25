@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "m.media-amazon.com" },
@@ -87,13 +85,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-let config = nextConfig;
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
-if (process.env.ANALYZE === "true") {
-  const withBundleAnalyzer = require("@next/bundle-analyzer")({
-    enabled: true,
-  });
-  config = withBundleAnalyzer(config);
-}
-
-export default config;
+export default withBundleAnalyzer(nextConfig);

@@ -7,13 +7,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  deleteDoc,
-  query,
-  where,
   serverTimestamp,
-  arrayUnion,
-  arrayRemove,
-  increment,
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "./config";
