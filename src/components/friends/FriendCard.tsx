@@ -102,22 +102,25 @@ export default function FriendCard({ friend, onRemove }: FriendCardProps) {
           </p>
         </div>
 
-        <button
-          onClick={handleRemove}
-          disabled={removing}
-          className="p-2 rounded-lg bg-red-400/20 hover:bg-red-400/30 text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-          title="Remove friend"
-        >
-          {removing ? (
-            <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <UserMinus className="h-4 w-4" />
-          )}
-        </button>
+        {onRemove && (
+          <button
+            onClick={handleRemove}
+            disabled={removing}
+            className="p-2 rounded-lg bg-red-400/20 hover:bg-red-400/30 text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            title="Remove friend"
+          >
+            {removing ? (
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <UserMinus className="h-4 w-4" />
+            )}
+          </button>
+        )}
       </Link>
     </motion.div>
   );
 }
+
 
 
 

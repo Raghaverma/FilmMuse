@@ -7,9 +7,10 @@ import type { MovieRating } from "@/lib/firebase/firestore";
 interface RatingsTabProps {
   ratings: Record<string, MovieRating>;
   onRemoveRating: (movieId: string) => void;
+  isOwnProfile?: boolean;
 }
 
-export default function RatingsTab({ ratings, onRemoveRating }: RatingsTabProps) {
+export default function RatingsTab({ ratings, onRemoveRating, isOwnProfile = true }: RatingsTabProps) {
   return (
     <motion.div
       key="ratings"
@@ -64,12 +65,14 @@ export default function RatingsTab({ ratings, onRemoveRating }: RatingsTabProps)
                   <div className="text-xs text-neutral-500 mt-1">
                     Rated {new Date(typeof rating.ratedAt === 'number' ? rating.ratedAt : rating.ratedAt.toMillis?.() || Date.now()).toLocaleDateString()}
                   </div>
-                  <button
-                    onClick={() => onRemoveRating(movieId)}
-                    className="mt-2 text-red-400 hover:text-red-300 text-xs"
-                  >
-                    Remove rating
-                  </button>
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => onRemoveRating(movieId)}
+                      className="mt-2 text-red-400 hover:text-red-300 text-xs"
+                    >
+                      Remove rating
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

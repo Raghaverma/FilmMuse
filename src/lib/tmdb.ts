@@ -754,6 +754,43 @@ export async function fetchGenres(): Promise<TMDbGenre[]> {
   }
 }
 
+export async function searchMovies(query: string, page = 1): Promise<TMDbMovieListResponse | null> {
+  if (!KEY || !query.trim()) return null;
+  
+  try {
+    const url = `${API_BASE_URL}/search/movie?api_key=${KEY}&query=${encodeURIComponent(query)}&page=${page}`;
+    const res = await fetchWithTimeout(url, 5000);
+    
+    if (!res.ok) return null;
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+    
+    const data = (await res.json()) as TMDbSearchResponse;
+    
+    // Convert TMDbSearchResponse to TMDbMovieListResponse format
+    return {
+      results: data.results.map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        release_date: movie.release_date,
+        poster_path: movie.poster_path,
+        backdrop_path: null,
+        overview: movie.overview,
+        vote_average: movie.vote_average,
+      })),
+      page: page,
+      total_pages: Math.ceil((data.total_results || 0) / 20),
+      total_results: data.total_results || 0,
+    };
+  } catch (error) {
+    console.debug("[tmdb] Failed to search movies:", error);
+    return null;
+  }
+}
+
 export async function discoverMovies(params: {
   genre?: number;
   year?: number;

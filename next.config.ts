@@ -71,7 +71,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebaseapp.com https://accounts.google.com https://www.googleapis.com",
-              "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com",
+              "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://www.youtube.com https://www.youtube-nocookie.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

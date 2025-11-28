@@ -229,7 +229,7 @@ export async function createCustomList(
   const newList: CustomList = {
     id: listId,
     name: name.trim(),
-    description: description?.trim(),
+    description: description?.trim() || undefined,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     movies: [],
@@ -256,7 +256,7 @@ export async function updateCustomList(
   if (list.ownerId !== user.uid) throw new Error("Not authorized");
 
   if (updates.name) list.name = updates.name.trim();
-  if (updates.description !== undefined) list.description = updates.description.trim();
+  if (updates.description !== undefined) list.description = updates.description.trim() || undefined;
   if (updates.isPublic !== undefined) list.isPublic = updates.isPublic;
   list.updatedAt = Date.now();
 
