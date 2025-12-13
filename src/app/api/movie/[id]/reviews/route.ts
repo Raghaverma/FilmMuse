@@ -3,10 +3,11 @@ import { fetchMovieReviews } from "@/lib/tmdb";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const tmdbId = parseInt(params.id);
+    const { id } = await params;
+    const tmdbId = parseInt(id);
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     
@@ -32,6 +33,12 @@ export async function GET(
     );
   }
 }
+
+
+
+
+
+
 
 
 
