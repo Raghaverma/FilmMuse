@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
       ownerIds.map(async (id) => {
         const ownerDoc = await db.collection("users").doc(id).get();
         if (ownerDoc.exists) {
-          owners[id] = ownerDoc.data() as Record<string, unknown>;
+          owners[id] = ownerDoc.data()!;
         }
       })
     );
