@@ -84,7 +84,7 @@ function sanitizeMovieArray(movies: unknown[]): MovieItem[] {
 
 export async function getUserData(uid: string): Promise<UserData> {
   const userDataDoc = await getDoc(doc(db, "userData", uid));
-  if (userDataDoc.exists()) {
+  if (userDataDoc.exists) {
     const data = userDataDoc.data();
     return {
       watchlist: sanitizeMovieArray(data.watchlist || []),

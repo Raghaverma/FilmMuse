@@ -114,7 +114,7 @@ export async function logout(): Promise<void> {
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   try {
     const userDoc = await getDoc(doc(db, "users", uid));
-    if (userDoc.exists()) {
+    if (userDoc.exists) {
       return userDoc.data() as UserProfile;
     }
     return null;
@@ -137,7 +137,7 @@ export async function signInWithGoogle(): Promise<User> {
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
     
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       // New user - create profile
       const username = user.displayName || user.email?.split("@")[0] || "User";
       

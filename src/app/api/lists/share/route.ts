@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       const { listId, userIds } = validated;
       
       const userDataDoc = await db.collection("userData").doc(uid).get();
-      if (!userDataDoc.exists()) {
+      if (!userDataDoc.exists) {
         return NextResponse.json({ error: "User data not found" }, { status: 404 });
       }
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userDataDoc = await db.collection("userData").doc(uid).get();
-    if (!userDataDoc.exists()) {
+    if (!userDataDoc.exists) {
       return NextResponse.json({ error: "User data not found" }, { status: 404 });
     }
 
@@ -155,7 +155,7 @@ export async function DELETE(request: NextRequest) {
     const { listId, userId: targetUserId } = validated;
 
     const userDataDoc = await db.collection("userData").doc(uid).get();
-    if (!userDataDoc.exists()) {
+    if (!userDataDoc.exists) {
       return NextResponse.json({ error: "User data not found" }, { status: 404 });
     }
 
@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
     await Promise.all(
       ownerIds.map(async (id) => {
         const ownerDoc = await db.collection("users").doc(id).get();
-        if (ownerDoc.exists()) {
+        if (ownerDoc.exists) {
           owners[id] = ownerDoc.data();
         }
       })
