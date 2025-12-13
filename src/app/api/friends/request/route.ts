@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
 
 async function verifyToken(request: NextRequest): Promise<string | null> {
@@ -10,9 +10,7 @@ async function verifyToken(request: NextRequest): Promise<string | null> {
     }
 
     const token = authHeader.substring(7);
-    const { getAuth } = await import("firebase-admin/auth");
-    const auth = getAuth();
-    const decodedToken = await auth.verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
 
     return decodedToken.uid;
   } catch {
