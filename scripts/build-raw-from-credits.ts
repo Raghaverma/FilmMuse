@@ -3,6 +3,7 @@
 import fs from "fs";
 import path from "path";
 import readline from "readline";
+import { once } from "node:events";
 
 const CANDIDATE_PATHS = [
   path.join(process.cwd(), "data", "credits.csv"),
@@ -127,7 +128,7 @@ async function main() {
   }
 
   out.end();
-  await new Promise((res) => out.on("close", res));
+  await once(out, "close");
 
   console.log(`Wrote ${wrote} lines → ${OUT_JSONL}`);
   console.log(`Skipped with no ${colIdName}: ${skippedNoId}`);
