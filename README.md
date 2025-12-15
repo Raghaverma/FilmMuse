@@ -176,10 +176,6 @@ src/
   - `npm run test:watch` - Run tests in watch mode
   - `npm run test:e2e` - Run Playwright E2E tests
 
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
 ## License
 
 Private - All rights reserved

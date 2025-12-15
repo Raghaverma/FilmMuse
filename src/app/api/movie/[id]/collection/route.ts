@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { fetchCollection } from "@/lib/tmdb";
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -31,15 +31,6 @@ export async function GET(
     );
   }
 }
-
-
-
-
-
-
-
-
-
 
 
 
