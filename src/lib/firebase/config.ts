@@ -30,7 +30,7 @@ if (typeof window !== 'undefined') {
   
   if (missingFields.length > 0) {
     console.error('Firebase configuration missing:', missingFields);
-    console.error('Please check your .env.local file has all NEXT_PUBLIC_FIREBASE_* variables set');
+    console.error('Please check your .env file has all NEXT_PUBLIC_FIREBASE_* variables set');
   }
 }
 

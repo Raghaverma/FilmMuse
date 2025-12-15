@@ -56,7 +56,7 @@ A modern film discovery platform that helps users find the perfect film for thei
 
 1. Clone the repository
 2. Install dependencies: `npm install`
-3. Copy `env.template` to `.env.local` and fill in your credentials:
+3. Copy `env.template` to `.env` and fill in your credentials:
    ```bash
    # Firebase Configuration
    FIREBASE_PROJECT_ID=your-project-id
