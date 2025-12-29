@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Bebas_Neue, Montserrat } from "next/font/google"; // [MODIFIED]
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/lib/firebase/auth-context";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -19,6 +19,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: "swap",
   preload: true,
+});
+
+const bebasNeue = Bebas_Neue({ // [NEW]
+  weight: "400",
+  variable: "--font-bebas",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const montserrat = Montserrat({ // [NEW]
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://filmmuse.app";
@@ -115,7 +128,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable} ${montserrat.variable} antialiased`} // [MODIFIED]
       >
         <ErrorBoundary>
           <ThemeProvider>

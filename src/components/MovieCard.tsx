@@ -2,7 +2,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Calendar, Film } from "lucide-react";
+import { Star, Calendar, Film, Play, Plus, Info, Check } from "lucide-react";
 import { getUserRatings } from "@/lib/auth-client";
 import MovieInteraction from "./MovieInteraction";
 import MovieDetailsModal from "./MovieDetailsModal";
@@ -25,42 +25,23 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
   const [tried, setTried] = React.useState<boolean>(false);
   const [userRating, setUserRating] = React.useState<number>(0);
   const [isHovered, setIsHovered] = React.useState(false);
-  const [quickInfo, setQuickInfo] = React.useState<{ genres?: string[]; plot?: string } | null>(null);
+
+  // Calculate a "Match Score" based on title hash or meta (Mock implementation)
+  const matchScore = React.useMemo(() => {
+    // Simple hash to get consistent random score between 80-99
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+      hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const score = 80 + (Math.abs(hash) % 20);
+    return score;
+  }, [title]);
+
 
   React.useEffect(() => {
     const ratings = getUserRatings();
     setUserRating(ratings[id]?.rating || 0);
   }, [id]);
-
-  // Load quick info on hover
-  React.useEffect(() => {
-    if (!isHovered || quickInfo) return;
-    
-    let cancelled = false;
-    const timeoutId = setTimeout(async () => {
-      try {
-        const url = `/api/movie/details?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}`;
-        const res = await fetch(url);
-        if (cancelled) return;
-        if (res.ok) {
-          const data = await res.json();
-          if (data && !cancelled) {
-            setQuickInfo({
-              genres: data.genre ? data.genre.split(",").map((g: string) => g.trim()) : undefined,
-              plot: data.plot && data.plot !== "N/A" ? data.plot.substring(0, 150) + "..." : undefined,
-            });
-          }
-        }
-      } catch (error) {
-        // Silently fail - this is just for preview
-      }
-    }, 500); // Delay to avoid unnecessary requests
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [isHovered, title, year, quickInfo]);
 
   React.useEffect(() => {
     if (src || tried) return;
@@ -100,48 +81,39 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="group relative rounded-2xl bg-neutral-900 border border-neutral-800 p-3 hover:border-emerald-400/30 transition-all duration-300 cursor-pointer"
+        layoutId={`card-${id}`}
+        className="group relative rounded-lg bg-neutral-900 mx-auto w-full cursor-pointer z-0 hover:z-50"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         onClick={() => {
           if (onBeforeOpen) {
             onBeforeOpen();
-            // Small delay to ensure parent modal closes before opening new one
-            setTimeout(() => {
-              setIsModalOpen(true);
-            }, 100);
+            setTimeout(() => setIsModalOpen(true), 100);
           } else {
             setIsModalOpen(true);
           }
         }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        whileHover={{
+          scale: 1.05,
+          y: -5
+        }}
+        transition={{ type: "spring", stiffness: 300 }}
+        style={{ aspectRatio: "2/3" }}
       >
-        <div
-          className="relative w-full overflow-hidden rounded-xl"
-          style={{ aspectRatio: "2 / 3" }}
-        >
+        <div className="relative h-full w-full overflow-hidden rounded-lg shadow-xl shadow-black/50">
           {src ? (
-            <motion.div
-              initial={{ scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="relative w-full h-full"
-            >
-              <Image
-                src={src}
-                alt={title}
-                fill
-                className="object-cover"
-                onError={() => {
-                  console.debug(`Poster not available for: ${title}`);
-                  setSrc(null);
-                }}
-                loading="lazy"
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              />
-            </motion.div>
+            <Image
+              src={src}
+              alt={title}
+              fill
+              className="object-cover"
+              onError={() => {
+                console.debug(`Poster not available for: ${title}`);
+                setSrc(null);
+              }}
+              loading="lazy"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-sm text-neutral-500 bg-white/5">
               {loading ? (
@@ -151,74 +123,99 @@ export default function MovieCard({ id, title, year, poster, meta, showInteracti
               )}
             </div>
           )}
-          
-          {showInteraction && (
-            <div 
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30 pointer-events-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MovieInteraction
-                movie={{ id, title, year, poster, meta }}
-                onUpdate={() => {
-                  const ratings = getUserRatings();
-                  setUserRating(ratings[id]?.rating || 0);
-                  onUpdate?.();
-                }}
-              />
-            </div>
-          )}
 
+          {/* Match Score Badge (Task 4) */}
+          <div className="absolute top-2 right-2 z-10">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-black/60 backdrop-blur-md border border-primary/30">
+              <svg className="h-8 w-8 -rotate-90" viewBox="0 0 36 36">
+                <path
+                  className="text-neutral-700"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                />
+                <path
+                  className="text-primary drop-shadow-[0_0_2px_rgba(229,9,20,0.8)]"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeDasharray={`${matchScore}, 100`}
+                />
+              </svg>
+              <span className="absolute text-[10px] font-bold text-white shadow-sm">{matchScore}%</span>
+            </div>
+            <div className="text-[9px] text-center text-primary font-bold mt-1 drop-shadow-md bg-black/50 rounded px-1">
+              MATCH
+            </div>
+          </div>
+
+          {/* User Rating Badge (Small, Top Left) */}
           {userRating > 0 && (
-            <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-full">
+            <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-full border border-yellow-500/30">
               <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
               <span className="text-xs font-medium text-white">{userRating}</span>
             </div>
           )}
 
-          {/* Hover Preview Overlay */}
+          {/* Quick Action Bar (Task 2) */}
           <AnimatePresence>
-            {isHovered && (quickInfo?.plot || quickInfo?.genres) && (
+            {isHovered && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 flex flex-col justify-end z-20 pointer-events-none"
-                onClick={(e) => e.stopPropagation()}
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/90 to-transparent backdrop-blur-[2px]"
               >
-                {quickInfo.genres && quickInfo.genres.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {quickInfo.genres.slice(0, 3).map((genre, idx) => (
-                      <span
-                        key={idx}
-                        className="text-xs px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30"
-                      >
-                        {genre}
-                      </span>
-                    ))}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-neutral-200 transition-colors"
+                      title="Play Trailer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Play trailer logic
+                        console.log("Play trailer");
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <Play className="h-4 w-4 fill-current ml-0.5" />
+                    </button>
+                    <button
+                      className="h-8 w-8 rounded-full border-2 border-neutral-400 text-white hover:border-white hover:bg-white/10 flex items-center justify-center transition-colors"
+                      title="Add to Watchlist"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Quick add logic
+                        console.log("Add to watchlist");
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
                   </div>
-                )}
-                {quickInfo.plot && (
-                  <p className="text-xs text-neutral-300 line-clamp-3 leading-relaxed">
-                    {quickInfo.plot}
-                  </p>
-                )}
-                {year && (
-                  <div className="flex items-center gap-1 mt-2 text-xs text-neutral-400">
-                    <Calendar className="h-3 w-3" />
-                    <span>{year}</span>
-                  </div>
-                )}
+                  <button
+                    className="h-8 w-8 rounded-full border border-neutral-500/50 bg-black/40 text-neutral-300 hover:border-white hover:text-white flex items-center justify-center transition-colors"
+                    title="More Info"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-2 text-xs font-semibold text-white/90 truncate drop-shadow-md">
+                  {title}
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-neutral-300">
+                  {year && <span>{year}</span>}
+                  {matchScore > 90 && <span className="text-primary font-bold">Recommended</span>}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        <div className="mt-3">
-          <div className="text-sm text-white/90 truncate font-medium" title={title}>
-            {title}
-          </div>
-          <div className="text-xs text-white/50 mt-1">{year ?? ""}</div>
         </div>
       </motion.div>
 

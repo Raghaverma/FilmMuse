@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Film, X, Menu } from "lucide-react";
+import NextImage from "next/image";
+import { X, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/firebase/auth-context";
 import {
@@ -40,7 +41,7 @@ export default function NavBar() {
     <>
       <header
         role="banner"
-        className="sticky top-0 z-50 border-b border-border backdrop-blur supports-[backdrop-filter]:bg-background/80 dark:border-white/5 dark:supports-[backdrop-filter]:bg-black/40"
+        className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl"
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
@@ -48,10 +49,16 @@ export default function NavBar() {
             className="inline-flex items-center gap-2 font-semibold tracking-tight"
             aria-label="FilmMuse home"
           >
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-emerald-400/10 ring-1 ring-emerald-400/30">
-              <Film className="h-4 w-4 text-emerald-300" />
-            </span>
-            <span className="text-sm uppercase text-neutral-300">FilmMuse</span>
+            <div className="relative h-8 w-8 overflow-hidden rounded-md">
+              <NextImage
+                src="/logo.png"
+                alt="FilmMuse Logo"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+            <span className="text-xl uppercase text-white tracking-widest font-bebas">FilmMuse</span>
           </Link>
           <nav
             aria-label="Primary"
@@ -71,8 +78,8 @@ export default function NavBar() {
                 <button onClick={() => { setIsLogin(true); setShowAuthDialog(true); }} className="hover:text-white transition-colors">
                   Log in
                 </button>
-                <button 
-                  onClick={() => { setIsLogin(false); setShowAuthDialog(true); }} 
+                <button
+                  onClick={() => { setIsLogin(false); setShowAuthDialog(true); }}
                   className="rounded-md border border-white/15 px-3 py-1.5 hover:bg-white/10 transition-colors"
                 >
                   Sign up
@@ -102,7 +109,7 @@ export default function NavBar() {
   );
 }
 
-function MobileMenu({ user, setIsLogin, setShowAuthDialog }: { 
+function MobileMenu({ user, setIsLogin, setShowAuthDialog }: {
   user: { email: string; username: string } | null;
   setIsLogin: (val: boolean) => void;
   setShowAuthDialog: (val: boolean) => void;
@@ -216,7 +223,7 @@ function MobileMenu({ user, setIsLogin, setShowAuthDialog }: {
                         setShowAuthDialog(true);
                         setIsOpen(false);
                       }}
-                      className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-left text-sm font-medium text-emerald-300 hover:bg-emerald-400/20 transition-colors"
+                      className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-left text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
                     >
                       Sign up
                     </button>
