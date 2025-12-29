@@ -298,7 +298,7 @@ export async function fetchTmdbOnce(
 
       // Step 4: Map to standard format
       const mapped = mapTMDbToStandard(detailsData);
-      
+
       // Step 5: Fetch watch providers
       try {
         const providersUrl = `${API_BASE_URL}/movie/${bestMatch.id}/watch/providers?api_key=${KEY}`;
@@ -317,7 +317,7 @@ export async function fetchTmdbOnce(
         // Silently fail - watch providers are optional
         console.debug("[tmdb] Failed to fetch watch providers:", error);
       }
-      
+
       setCache(key, mapped);
       return mapped;
     } catch (error) {
@@ -390,18 +390,18 @@ export type TMDbVideosResponse = {
 
 export async function fetchMovieVideos(tmdbId: number): Promise<TMDbVideo[]> {
   if (!KEY || !tmdbId) return [];
-  
+
   try {
     const url = `${API_BASE_URL}/movie/${tmdbId}/videos?api_key=${KEY}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return [];
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return [];
     }
-    
+
     const data = (await res.json()) as TMDbVideosResponse;
     return data.results || [];
   } catch (error) {
@@ -429,18 +429,18 @@ export type TMDbSimilarResponse = {
 
 export async function fetchSimilarMovies(tmdbId: number, page = 1): Promise<TMDbSimilarResponse | null> {
   if (!KEY || !tmdbId) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/movie/${tmdbId}/similar?api_key=${KEY}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbSimilarResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch similar movies:", error);
@@ -450,18 +450,18 @@ export async function fetchSimilarMovies(tmdbId: number, page = 1): Promise<TMDb
 
 export async function fetchRecommendedMovies(tmdbId: number, page = 1): Promise<TMDbSimilarResponse | null> {
   if (!KEY || !tmdbId) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/movie/${tmdbId}/recommendations?api_key=${KEY}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbSimilarResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch recommendations:", error);
@@ -493,18 +493,18 @@ export type TMDbReviewsResponse = {
 
 export async function fetchMovieReviews(tmdbId: number, page = 1): Promise<TMDbReviewsResponse | null> {
   if (!KEY || !tmdbId) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/movie/${tmdbId}/reviews?api_key=${KEY}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbReviewsResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch reviews:", error);
@@ -536,18 +536,18 @@ export type TMDbCreditsResponse = {
 
 export async function fetchMovieCredits(tmdbId: number): Promise<TMDbCreditsResponse | null> {
   if (!KEY || !tmdbId) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/movie/${tmdbId}/credits?api_key=${KEY}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbCreditsResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch credits:", error);
@@ -571,18 +571,18 @@ export type TMDbCollection = {
 
 export async function fetchCollection(collectionId: number): Promise<TMDbCollection | null> {
   if (!KEY || !collectionId) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/collection/${collectionId}?api_key=${KEY}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbCollection;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch collection:", error);
@@ -601,18 +601,18 @@ export type TMDbKeywordsResponse = {
 
 export async function fetchMovieKeywords(tmdbId: number): Promise<TMDbKeyword[]> {
   if (!KEY || !tmdbId) return [];
-  
+
   try {
     const url = `${API_BASE_URL}/movie/${tmdbId}/keywords?api_key=${KEY}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return [];
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return [];
     }
-    
+
     const data = (await res.json()) as TMDbKeywordsResponse;
     return data.keywords || [];
   } catch (error) {
@@ -641,18 +641,18 @@ export type TMDbMovieListResponse = {
 
 export async function fetchTrendingMovies(timeWindow: "day" | "week" = "day", page = 1): Promise<TMDbMovieListResponse | null> {
   if (!KEY) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/trending/movie/${timeWindow}?api_key=${KEY}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbMovieListResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch trending movies:", error);
@@ -662,18 +662,18 @@ export async function fetchTrendingMovies(timeWindow: "day" | "week" = "day", pa
 
 export async function fetchPopularMovies(page = 1): Promise<TMDbMovieListResponse | null> {
   if (!KEY) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/movie/popular?api_key=${KEY}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbMovieListResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch popular movies:", error);
@@ -683,18 +683,18 @@ export async function fetchPopularMovies(page = 1): Promise<TMDbMovieListRespons
 
 export async function fetchNowPlayingMovies(page = 1): Promise<TMDbMovieListResponse | null> {
   if (!KEY) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/movie/now_playing?api_key=${KEY}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbMovieListResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch now playing movies:", error);
@@ -704,21 +704,42 @@ export async function fetchNowPlayingMovies(page = 1): Promise<TMDbMovieListResp
 
 export async function fetchUpcomingMovies(page = 1): Promise<TMDbMovieListResponse | null> {
   if (!KEY) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/movie/upcoming?api_key=${KEY}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbMovieListResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to fetch upcoming movies:", error);
+    return null;
+  }
+}
+
+export async function fetchMovieDetails(tmdbId: number): Promise<TMDbMovieDetails | null> {
+  if (!KEY || !tmdbId) return null;
+
+  try {
+    const url = `${API_BASE_URL}/movie/${tmdbId}?api_key=${KEY}&append_to_response=images,videos,credits`;
+    const res = await fetchWithTimeout(url, 5000);
+
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
+      return null;
+    }
+
+    return (await res.json()) as TMDbMovieDetails;
+  } catch (error) {
+    console.debug("[tmdb] Failed to fetch movie details:", error);
     return null;
   }
 }
@@ -734,18 +755,18 @@ export type TMDbGenresResponse = {
 
 export async function fetchGenres(): Promise<TMDbGenre[]> {
   if (!KEY) return [];
-  
+
   try {
     const url = `${API_BASE_URL}/genre/movie/list?api_key=${KEY}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return [];
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return [];
     }
-    
+
     const data = (await res.json()) as TMDbGenresResponse;
     return data.genres || [];
   } catch (error) {
@@ -756,20 +777,20 @@ export async function fetchGenres(): Promise<TMDbGenre[]> {
 
 export async function searchMovies(query: string, page = 1): Promise<TMDbMovieListResponse | null> {
   if (!KEY || !query.trim()) return null;
-  
+
   try {
     const url = `${API_BASE_URL}/search/movie?api_key=${KEY}&query=${encodeURIComponent(query)}&page=${page}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     const data = (await res.json()) as TMDbSearchResponse;
-    
+
     // Convert TMDbSearchResponse to TMDbMovieListResponse format
     return {
       results: data.results.map(movie => ({
@@ -800,28 +821,28 @@ export async function discoverMovies(params: {
   page?: number;
 }): Promise<TMDbMovieListResponse | null> {
   if (!KEY) return null;
-  
+
   try {
     const searchParams = new URLSearchParams();
     searchParams.append("api_key", KEY);
-    
+
     if (params.genre) searchParams.append("with_genres", params.genre.toString());
     if (params.year) searchParams.append("year", params.year.toString());
     if (params["vote_average.gte"]) searchParams.append("vote_average.gte", params["vote_average.gte"].toString());
     if (params.language) searchParams.append("with_original_language", params.language);
     if (params.sort_by) searchParams.append("sort_by", params.sort_by);
     searchParams.append("page", (params.page || 1).toString());
-    
+
     const url = `${API_BASE_URL}/discover/movie?${searchParams.toString()}`;
     const res = await fetchWithTimeout(url, 5000);
-    
+
     if (!res.ok) return null;
-    
+
     const contentType = res.headers.get("content-type");
     if (!contentType?.includes("application/json") && !contentType?.includes("text/json")) {
       return null;
     }
-    
+
     return (await res.json()) as TMDbMovieListResponse;
   } catch (error) {
     console.debug("[tmdb] Failed to discover movies:", error);
