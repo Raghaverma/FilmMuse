@@ -8,7 +8,6 @@ import { MovieCardGridSkeleton } from "@/components/ui/skeleton";
 import StaggerList from "@/components/StaggerList";
 import NavBar from "@/components/home/NavBar";
 import Footer from "@/components/home/Footer";
-import DottedBG from "@/components/home/DottedBG";
 
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
@@ -104,9 +103,8 @@ export default function DiscoverPage() {
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-background text-foreground selection:bg-emerald-300/20 selection:text-emerald-200 dark:bg-[#0a0a0a] dark:text-neutral-100"
     >
-      <DottedBG />
       <NavBar />
-      
+
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -129,9 +127,8 @@ export default function DiscoverPage() {
 
           {/* Filters Sidebar */}
           <div
-            className={`${
-              filtersOpen ? "block" : "hidden"
-            } md:block mb-6 p-4 bg-white/5 rounded-lg border border-white/10`}
+            className={`${filtersOpen ? "block" : "hidden"
+              } md:block mb-6 p-4 bg-white/5 rounded-lg border border-white/10`}
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
