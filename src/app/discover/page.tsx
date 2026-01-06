@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unescape-entities */
+
 "use client";
 
 import * as React from "react";

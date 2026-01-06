@@ -54,7 +54,7 @@ export default function MovieHero({ details, movie, onUpdate }: MovieHeroProps) 
           alt={details.title}
           fill
           className="object-cover"
-          onError={(e: any) => {
+          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
             const img = e.currentTarget;
             img.style.display = 'none';
             const parent = img.parentElement;

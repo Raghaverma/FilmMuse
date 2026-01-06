@@ -34,7 +34,9 @@ import { ProfileHeaderSkeleton } from "@/components/ui/skeleton";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { cn } from "@/lib/utils";
 
-export default function ProfilePage() {
+import { Suspense } from "react";
+
+function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -468,5 +470,13 @@ export default function ProfilePage() {
         />
       )}
     </motion.main>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#0a0a0a] pt-20 pb-10"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><ProfileHeaderSkeleton /></div></main>}>
+      <ProfileContent />
+    </Suspense>
   );
 }

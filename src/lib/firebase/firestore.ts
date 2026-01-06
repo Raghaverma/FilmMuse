@@ -25,13 +25,13 @@ function sanitizeMovieItem(movie: MovieItem): MovieItem {
     id: movie.id,
     title: movie.title,
   };
-  
+
   if (movie.year !== undefined && movie.year !== null) {
     sanitized.year = movie.year;
   }
-  
+
   sanitized.poster = movie.poster ?? null;
-  
+
   return sanitized;
 }
 
@@ -84,7 +84,7 @@ function sanitizeMovieArray(movies: unknown[]): MovieItem[] {
 
 export async function getUserData(uid: string): Promise<UserData> {
   const userDataDoc = await getDoc(doc(db, "userData", uid));
-  if (userDataDoc.exists) {
+  if (userDataDoc.exists()) {
     const data = userDataDoc.data();
     return {
       watchlist: sanitizeMovieArray(data.watchlist || []),

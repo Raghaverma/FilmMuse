@@ -27,13 +27,13 @@ export default function ConfirmDialog({
   variant = "danger",
 }: Props) {
   React.useEffect(() => {
-    if (isOpen) {
-      const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === "Escape") onCancel();
-      };
-      window.addEventListener("keydown", handleEscape);
-      return () => window.removeEventListener("keydown", handleEscape);
-    }
+    if (!isOpen) return;
+
+    const handleEscape = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
   }, [isOpen, onCancel]);
 
   return (
@@ -60,16 +60,14 @@ export default function ConfirmDialog({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-4">
-              <div className={`rounded-full p-2 ${
-                variant === "danger" ? "bg-red-500/20" : 
-                variant === "warning" ? "bg-amber-500/20" : 
-                "bg-blue-500/20"
-              }`}>
-                <AlertTriangle className={`h-5 w-5 ${
-                  variant === "danger" ? "text-red-400" : 
-                  variant === "warning" ? "text-amber-400" : 
-                  "text-blue-400"
-                }`} />
+              <div className={`rounded-full p-2 ${variant === "danger" ? "bg-red-500/20" :
+                variant === "warning" ? "bg-amber-500/20" :
+                  "bg-blue-500/20"
+                }`}>
+                <AlertTriangle className={`h-5 w-5 ${variant === "danger" ? "text-red-400" :
+                  variant === "warning" ? "text-amber-400" :
+                    "text-blue-400"
+                  }`} />
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
@@ -86,11 +84,11 @@ export default function ConfirmDialog({
                     type="button"
                     onClick={onConfirm}
                     className={
-                      variant === "danger" 
-                        ? "bg-red-500 hover:bg-red-600 text-white" 
+                      variant === "danger"
+                        ? "bg-red-500 hover:bg-red-600 text-white"
                         : variant === "warning"
-                        ? "bg-amber-500 hover:bg-amber-600 text-white"
-                        : "bg-emerald-400 text-black hover:bg-emerald-300"
+                          ? "bg-amber-500 hover:bg-amber-600 text-white"
+                          : "bg-emerald-400 text-black hover:bg-emerald-300"
                     }
                   >
                     {confirmText}

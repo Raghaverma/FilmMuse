@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
         userData.email?.toLowerCase().includes(queryLower)
       ) {
         results.push({
-          uid: doc.id,
           ...userData,
+          uid: doc.id,
         });
       }
     });

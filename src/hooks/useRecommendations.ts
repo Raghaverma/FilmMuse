@@ -19,9 +19,10 @@ export function useRecommendations() {
       }
       try {
         const watchlist = await getUserWatchlist(user.uid);
-        const data = await movieService.getRecommendations(watchlist.watchlist, watchlist.liked);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = await movieService.getRecommendations(watchlist.watchlist as any, watchlist.liked as any);
         setPersonalizedRecs(data.items || []);
-      } catch (error) {
+      } catch {
         // Handle error silently
       } finally {
         setLoadingPersonalized(false);
@@ -32,7 +33,7 @@ export function useRecommendations() {
       try {
         const data = await movieService.getRandomRecommendations();
         setRandomRecs(data.items || []);
-      } catch (error) {
+      } catch {
         // Handle error silently
       } finally {
         setLoadingRandom(false);
@@ -47,9 +48,10 @@ export function useRecommendations() {
     if (!user) return;
     try {
       const watchlist = await getUserWatchlist(user.uid);
-      const data = await movieService.getRecommendations(watchlist.watchlist, watchlist.liked);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await movieService.getRecommendations(watchlist.watchlist as any, watchlist.liked as any);
       setPersonalizedRecs(data.items || []);
-    } catch (error) {
+    } catch {
       // Handle error silently
     }
   }, [user]);

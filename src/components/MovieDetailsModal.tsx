@@ -151,7 +151,7 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
     return () => {
       cancelled = true;
     };
-  }, [isOpen, movie.id, movie.title, movie.year, user]);
+  }, [isOpen, movie.id, movie.title, movie.year, movie.poster, user]);
 
   const handleClose = React.useCallback(() => {
     setDetails(null);

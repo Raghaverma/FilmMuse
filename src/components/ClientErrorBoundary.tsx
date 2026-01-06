@@ -26,6 +26,7 @@ export default class ClientErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     errorHandler.error("React Error Boundary caught an error", error, {
       componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
     });
   }
 

@@ -149,7 +149,7 @@ export default function MovieFullCast({ tmdbId }: MovieFullCastProps) {
                       alt={member.name}
                       fill
                       className="object-cover"
-                      onError={(e: any) => {
+                      onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                         const target = e.currentTarget;
                         target.style.display = "none";
                         const parent = target.parentElement;
@@ -214,7 +214,7 @@ export default function MovieFullCast({ tmdbId }: MovieFullCastProps) {
                         width={48}
                         height={48}
                         className="rounded-full object-cover"
-                        onError={(e: any) => {
+                        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                           const target = e.currentTarget;
                           target.style.display = "none";
                         }}

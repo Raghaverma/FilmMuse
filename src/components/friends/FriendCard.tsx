@@ -80,7 +80,7 @@ export default function FriendCard({ friend, onRemove }: FriendCardProps) {
               width={64}
               height={64}
               className="rounded-lg object-cover border-2 border-emerald-400/30"
-              onError={(e: any) => {
+              onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                 const target = e.currentTarget;
                 target.style.display = "none";
                 const fallback = target.parentElement?.querySelector(".fallback-avatar") as HTMLElement;

@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { fetchMovieKeywords } from "@/lib/tmdb";
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     const tmdbId = parseInt(id);
-    
+
     if (isNaN(tmdbId)) {
       return NextResponse.json(
         { error: "Invalid movie ID" },
@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const keywords = await fetchMovieKeywords(tmdbId);
-    
+
     return NextResponse.json({ keywords });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch keywords";

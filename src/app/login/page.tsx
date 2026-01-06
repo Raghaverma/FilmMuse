@@ -10,7 +10,9 @@ import { useAuth } from "@/lib/firebase/auth-context";
 import { toast } from "react-hot-toast";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginContent() {
   const router = useRouter();
   const sp = useSearchParams();
   const nextUrl = sp.get("next") || "/";
@@ -121,17 +123,17 @@ export default function LoginPage() {
                   <Mail className="h-4 w-4" />
                   Email
                 </label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  value={email} 
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
                   onChange={e => {
                     setEmail(e.target.value);
                     setError(null);
                   }}
                   placeholder="your.email@example.com"
-                  className="bg-transparent border-0 border-b border-white/20 rounded-none px-0 focus-visible:ring-0 focus-visible:border-emerald-400" 
-                  required 
+                  className="bg-transparent border-0 border-b border-white/20 rounded-none px-0 focus-visible:ring-0 focus-visible:border-emerald-400"
+                  required
                   disabled={loading}
                 />
               </div>
@@ -141,17 +143,17 @@ export default function LoginPage() {
                   Password
                 </label>
                 <div className="relative">
-                  <Input 
-                    id="password" 
-                    type={showPassword ? "text" : "password"} 
-                    value={password} 
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
                     onChange={e => {
                       setPassword(e.target.value);
                       setError(null);
                     }}
                     placeholder="Enter your password"
-                    className="bg-transparent border-0 border-b border-white/20 rounded-none px-0 pr-8 focus-visible:ring-0 focus-visible:border-emerald-400" 
-                    required 
+                    className="bg-transparent border-0 border-b border-white/20 rounded-none px-0 pr-8 focus-visible:ring-0 focus-visible:border-emerald-400"
+                    required
                     disabled={loading}
                   />
                   <button
@@ -170,15 +172,15 @@ export default function LoginPage() {
                 </div>
               )}
               <div className="mt-1 flex items-center gap-3">
-                <Button 
-                  type="submit" 
-                  disabled={loading || googleLoading} 
+                <Button
+                  type="submit"
+                  disabled={loading || googleLoading}
                   className="bg-emerald-400 text-black hover:bg-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                 >
                   {loading ? "Signing in…" : "Log in"}
                 </Button>
-                <Link 
-                  href="/signup" 
+                <Link
+                  href="/signup"
                   className="rounded-full border border-white/20 px-4 py-2 text-sm text-neutral-200 hover:bg-white/10 transition-colors"
                 >
                   Sign up
@@ -237,6 +239,14 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a]" />}>
+      <LoginContent />
+    </Suspense>
   );
 }
 

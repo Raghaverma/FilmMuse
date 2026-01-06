@@ -55,8 +55,8 @@ export async function sendFriendRequest(targetUserId: string): Promise<void> {
   const friendDocId = createFriendDocId(user.uid, targetUserId);
   const friendRef = doc(db, "friends", friendDocId);
   const friendDoc = await getDoc(friendRef);
-  
-  if (friendDoc.exists && friendDoc.data()?.status === "accepted") {
+
+  if (friendDoc.exists() && friendDoc.data()?.status === "accepted") {
     throw new Error("Already friends");
   }
 
@@ -64,8 +64,8 @@ export async function sendFriendRequest(targetUserId: string): Promise<void> {
   const requestId = `${user.uid}_${targetUserId}`;
   const requestRef = doc(db, "friendRequests", requestId);
   const requestDoc = await getDoc(requestRef);
-  
-  if (requestDoc.exists && requestDoc.data()?.status === "pending") {
+
+  if (requestDoc.exists() && requestDoc.data()?.status === "pending") {
     throw new Error("Friend request already sent");
   }
 
@@ -100,7 +100,7 @@ export async function acceptFriendRequest(requesterId: string): Promise<void> {
   const requestRef = doc(db, "friendRequests", requestId);
   const requestDoc = await getDoc(requestRef);
 
-  if (!requestDoc.exists) {
+  if (!requestDoc.exists()) {
     throw new Error("Friend request not found");
   }
 
@@ -118,7 +118,7 @@ export async function acceptFriendRequest(requesterId: string): Promise<void> {
   // Create mutual friendship
   const friendDocId = createFriendDocId(user.uid, requesterId);
   const friendRef = doc(db, "friends", friendDocId);
-  
+
   await setDoc(friendRef, {
     user1: user.uid < requesterId ? user.uid : requesterId,
     user2: user.uid < requesterId ? requesterId : user.uid,
@@ -141,7 +141,7 @@ export async function rejectFriendRequest(requesterId: string): Promise<void> {
   const requestRef = doc(db, "friendRequests", requestId);
   const requestDoc = await getDoc(requestRef);
 
-  if (!requestDoc.exists) {
+  if (!requestDoc.exists()) {
     throw new Error("Friend request not found");
   }
 
@@ -160,8 +160,8 @@ export async function rejectFriendRequest(requesterId: string): Promise<void> {
   const friendDocId = createFriendDocId(user.uid, requesterId);
   const friendRef = doc(db, "friends", friendDocId);
   const friendDoc = await getDoc(friendRef);
-  
-  if (friendDoc.exists && friendDoc.data()?.status === "pending") {
+
+  if (friendDoc.exists() && friendDoc.data()?.status === "pending") {
     await deleteDoc(friendRef);
   }
 }
@@ -176,7 +176,7 @@ export async function removeFriend(friendId: string): Promise<void> {
   const friendRef = doc(db, "friends", friendDocId);
   const friendDoc = await getDoc(friendRef);
 
-  if (!friendDoc.exists || friendDoc.data()?.status !== "accepted") {
+  if (!friendDoc.exists() || friendDoc.data()?.status !== "accepted") {
     throw new Error("Friendship not found");
   }
 
@@ -186,14 +186,14 @@ export async function removeFriend(friendId: string): Promise<void> {
   // Delete friend requests in both directions
   const request1Ref = doc(db, "friendRequests", `${user.uid}_${friendId}`);
   const request2Ref = doc(db, "friendRequests", `${friendId}_${user.uid}`);
-  
+
   const [req1, req2] = await Promise.all([
     getDoc(request1Ref),
     getDoc(request2Ref),
   ]);
 
-  if (req1.exists) await deleteDoc(request1Ref);
-  if (req2.exists) await deleteDoc(request2Ref);
+  if (req1.exists()) await deleteDoc(request1Ref);
+  if (req2.exists()) await deleteDoc(request2Ref);
 
   // Update friend counts
   await updateFriendCounts(user.uid, friendId, -1);
@@ -217,7 +217,7 @@ export async function getFriendRequests(): Promise<FriendRequest[]> {
   for (const docSnap of snapshot.docs) {
     const data = docSnap.data();
     const requesterProfile = await getUserProfile(data.requesterId);
-    
+
     if (requesterProfile) {
       requests.push({
         id: docSnap.id,
@@ -264,7 +264,7 @@ export async function getFriends(): Promise<Friend[]> {
     const data = docSnap.data();
     const friendId = data.user2;
     const friendProfile = await getUserProfile(friendId);
-    
+
     if (friendProfile) {
       friends.push({
         userId: friendId,
@@ -281,7 +281,7 @@ export async function getFriends(): Promise<Friend[]> {
     const data = docSnap.data();
     const friendId = data.user1;
     const friendProfile = await getUserProfile(friendId);
-    
+
     if (friendProfile) {
       friends.push({
         userId: friendId,
@@ -307,7 +307,7 @@ export async function getFriendshipStatus(targetUserId: string): Promise<Friends
   const friendRef = doc(db, "friends", friendDocId);
   const friendDoc = await getDoc(friendRef);
 
-  if (friendDoc.exists) {
+  if (friendDoc.exists()) {
     const data = friendDoc.data();
     if (data.status === "accepted") {
       return "friends";
@@ -324,16 +324,16 @@ export async function getFriendshipStatus(targetUserId: string): Promise<Friends
   // Check if request exists
   const requestId1 = `${user.uid}_${targetUserId}`;
   const requestId2 = `${targetUserId}_${user.uid}`;
-  
+
   const [req1, req2] = await Promise.all([
     getDoc(doc(db, "friendRequests", requestId1)),
     getDoc(doc(db, "friendRequests", requestId2)),
   ]);
 
-  if (req1.exists && req1.data()?.status === "pending") {
+  if (req1.exists() && req1.data()?.status === "pending") {
     return "requested";
   }
-  if (req2.exists && req2.data()?.status === "pending") {
+  if (req2.exists() && req2.data()?.status === "pending") {
     return "pending";
   }
 
@@ -373,7 +373,7 @@ async function updateFriendCounts(userId1: string, userId2: string, delta: numbe
   ]);
 
   const updateStats = async (ref: DocumentReference, docSnap: DocumentSnapshot) => {
-    if (docSnap.exists) {
+    if (docSnap.exists()) {
       const data = docSnap.data();
       const currentCount = (data?.friendsCount as number | undefined) || 0;
       await updateDoc(ref, {

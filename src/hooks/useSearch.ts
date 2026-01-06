@@ -25,14 +25,14 @@ export function useSearch(initialQuery: string, initialGenre: string) {
   const [query, setQuery] = React.useState(initialQuery);
   const [genre, setGenre] = React.useState<string>(initialGenre);
   const [debouncedQuery, setDebouncedQuery] = React.useState(initialQuery);
-  
+
   const [results, setResults] = React.useState<Movie[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [total, setTotal] = React.useState<number>(0);
   const [nextOffset, setNextOffset] = React.useState<number | null>(null);
   const [usedFallback, setUsedFallback] = React.useState<boolean>(false);
-  
+
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const hasSearchedRef = React.useRef(false);
   const isInitialMount = React.useRef(true);
@@ -60,7 +60,7 @@ export function useSearch(initialQuery: string, initialGenre: string) {
 
     const cacheKey = getCacheKey(searchQuery, searchGenre, offset);
     const cached = searchCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       const data = cached.data;
       setResults(prev => reset ? data.items : [...prev, ...data.items]);
@@ -123,10 +123,10 @@ export function useSearch(initialQuery: string, initialGenre: string) {
 
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
-      
+
       const errorMessage = err instanceof Error ? err.message : "Something went wrong";
       setError(errorMessage);
-      
+
       if (reset) {
         setResults([]);
         setTotal(0);
@@ -145,7 +145,7 @@ export function useSearch(initialQuery: string, initialGenre: string) {
       performSearch(initialQuery, initialGenre, 0, true);
     }
     isInitialMount.current = false;
-  }, []);
+  }, [initialQuery, initialGenre, performSearch]);
 
   React.useEffect(() => {
     if (isInitialMount.current) {
@@ -180,7 +180,7 @@ export function useSearch(initialQuery: string, initialGenre: string) {
     setNextOffset(null);
     setError(null);
     hasSearchedRef.current = false;
-    
+
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.delete("q");
     newUrl.searchParams.delete("genre");

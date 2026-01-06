@@ -128,13 +128,13 @@ function MobileMenu({ user, setIsLogin, setShowAuthDialog }: {
   }, [isOpen]);
 
   React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") setIsOpen(false);
     };
-    if (isOpen) {
-      window.addEventListener("keydown", handleEscape);
-      return () => window.removeEventListener("keydown", handleEscape);
-    }
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
   }, [isOpen]);
 
   return (

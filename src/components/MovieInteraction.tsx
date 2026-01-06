@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { 
-  MoreVertical, 
-  Bookmark, 
-  Heart, 
-  Star, 
+import {
+  MoreVertical,
+  Bookmark,
+  Heart,
+  Star,
   Check,
   ListPlus
 } from "lucide-react";
@@ -19,7 +19,7 @@ import {
   getUserCustomLists,
   addMovieToCustomList,
   rateMovie,
-  getUserRatings,
+
   type MovieItem,
 } from "@/lib/firebase/firestore";
 import { useAuth } from "@/lib/firebase/auth-context";
@@ -78,26 +78,26 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
       const menuWidth = 192;
       const menuHeight = 200;
       const padding = 8;
-      
+
       let right = window.innerWidth - rect.right;
       let top = rect.bottom + padding;
-      
+
       if (right < menuWidth) {
         right = window.innerWidth - rect.left;
       }
-      
+
       if (top + menuHeight > window.innerHeight) {
         top = rect.top - menuHeight - padding;
       }
-      
+
       if (right > window.innerWidth - menuWidth) {
         right = window.innerWidth - menuWidth - padding;
       }
-      
+
       if (top < padding) {
         top = padding;
       }
-      
+
       setMenuPosition({ top, right });
     } else {
       setMenuPosition(null);
@@ -106,7 +106,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        menuRef.current && 
+        menuRef.current &&
         !menuRef.current.contains(event.target as Node) &&
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
@@ -121,6 +121,7 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }
+    return undefined;
   }, [isMenuOpen]);
 
   const inWatchlist = watchlist.watchlist.some(m => m.id === movie.id);
@@ -359,11 +360,10 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
                   className="transition-transform hover:scale-110"
                 >
                   <Star
-                    className={`h-8 w-8 transition-colors ${
-                      star <= selectedRating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-neutral-600 hover:text-yellow-400/50"
-                    }`}
+                    className={`h-8 w-8 transition-colors ${star <= selectedRating
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-neutral-600 hover:text-yellow-400/50"
+                      }`}
                   />
                 </button>
               ))}
@@ -416,9 +416,8 @@ export default function MovieInteraction({ movie, onUpdate, className }: MovieIn
                         }
                       }}
                       disabled={alreadyInList}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 transition-colors ${
-                        alreadyInList ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 transition-colors ${alreadyInList ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-sm">{list.name}</span>

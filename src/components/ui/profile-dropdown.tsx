@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/firebase/auth";
-import { useAuth } from "@/lib/firebase/auth-context";
+
 import Link from "next/link";
 
 interface ProfileDropdownProps {
@@ -27,8 +27,7 @@ interface ProfileDropdownProps {
 }
 
 export function ProfileDropdown({ userProfile, stats }: ProfileDropdownProps) {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const { user } = useAuth();
+  const { setTheme, resolvedTheme } = useTheme();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
@@ -51,18 +50,18 @@ export function ProfileDropdown({ userProfile, stats }: ProfileDropdownProps) {
   };
 
   const menuItems = [
-    { 
-      icon: <BarChart3 className="w-5 h-5" />, 
+    {
+      icon: <BarChart3 className="w-5 h-5" />,
       label: "Activity log",
       href: "/profile",
     },
-    { 
-      icon: <Settings className="w-5 h-5" />, 
+    {
+      icon: <Settings className="w-5 h-5" />,
       label: "Settings",
       href: "/account",
     },
-    { 
-      icon: <Grid3X3 className="w-5 h-5" />, 
+    {
+      icon: <Grid3X3 className="w-5 h-5" />,
       label: "My Lists",
       href: "/profile",
     },
@@ -223,18 +222,16 @@ export function ProfileDropdown({ userProfile, stats }: ProfileDropdownProps) {
               <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
                 <div className="flex bg-neutral-100 dark:bg-neutral-700 rounded-lg p-1">
                   <motion.button
-                    className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md ${
-                      resolvedTheme === "light" ? "bg-white dark:bg-neutral-600 shadow-sm" : ""
-                    }`}
+                    className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md ${resolvedTheme === "light" ? "bg-white dark:bg-neutral-600 shadow-sm" : ""
+                      }`}
                     onClick={() => setTheme("light")}
                     whileHover={{ scale: resolvedTheme !== "light" ? 1.03 : 1 }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <Sun
-                      className={`w-4 h-4 mr-2 ${
-                        resolvedTheme === "light" ? "text-amber-500" : "text-neutral-500 dark:text-neutral-400"
-                      }`}
+                      className={`w-4 h-4 mr-2 ${resolvedTheme === "light" ? "text-amber-500" : "text-neutral-500 dark:text-neutral-400"
+                        }`}
                     />
                     <span
                       className={
@@ -247,18 +244,16 @@ export function ProfileDropdown({ userProfile, stats }: ProfileDropdownProps) {
                     </span>
                   </motion.button>
                   <motion.button
-                    className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md ${
-                      resolvedTheme === "dark" ? "bg-neutral-600 shadow-sm" : ""
-                    }`}
+                    className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md ${resolvedTheme === "dark" ? "bg-neutral-600 shadow-sm" : ""
+                      }`}
                     onClick={() => setTheme("dark")}
                     whileHover={{ scale: resolvedTheme !== "dark" ? 1.03 : 1 }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <Moon
-                      className={`w-4 h-4 mr-2 ${
-                        resolvedTheme === "dark" ? "text-indigo-300" : "text-neutral-500 dark:text-neutral-400"
-                      }`}
+                      className={`w-4 h-4 mr-2 ${resolvedTheme === "dark" ? "text-indigo-300" : "text-neutral-500 dark:text-neutral-400"
+                        }`}
                     />
                     <span
                       className={resolvedTheme === "dark" ? "text-white font-medium" : "text-neutral-500 dark:text-neutral-400"}

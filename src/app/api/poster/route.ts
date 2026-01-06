@@ -11,17 +11,18 @@ export async function GET(req: Request) {
       year: searchParams.get("year"),
     });
     const { title, year } = params;
+    const parsedYear = year ? Number(year) : undefined;
 
     // Try TMDb first (primary source)
     let poster: string | null = null;
     let source = "tmdb";
-    
-    poster = await fetchTmdbPoster(title, year);
-    
+
+    poster = await fetchTmdbPoster(title, parsedYear);
+
     // Fallback to OMDb if TMDb fails
     if (!poster) {
       source = "omdb";
-      const omdbData = await fetchOmdbOnce(title, year);
+      const omdbData = await fetchOmdbOnce(title, parsedYear);
       poster = omdbData?.Poster && omdbData.Poster !== "N/A" ? omdbData.Poster : null;
     }
 

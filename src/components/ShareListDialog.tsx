@@ -53,7 +53,7 @@ export default function ShareListDialog({
           return results.find((u) => u.uid === uid) || { uid, username: uid, email: "" };
         })
       );
-      setSharedUsers(users.filter((u): u is SharedUser => Boolean(u)));
+      setSharedUsers(users as SharedUser[]);
     } catch (error) {
       console.error("Error loading shared users:", error);
     }

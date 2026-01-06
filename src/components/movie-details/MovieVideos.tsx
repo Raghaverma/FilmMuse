@@ -141,7 +141,7 @@ export default function MovieVideos({ tmdbId }: MovieVideosProps) {
                       alt={video.name}
                       fill
                       className="object-cover"
-                      onError={(e: any) => {
+                      onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                         const target = e.currentTarget;
                         target.style.display = "none";
                       }}

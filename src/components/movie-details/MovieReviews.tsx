@@ -151,7 +151,7 @@ export default function MovieReviews({ tmdbId }: MovieReviewsProps) {
                     width={40}
                     height={40}
                     className="rounded-full object-cover"
-                    onError={(e: any) => {
+                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                       const target = e.currentTarget;
                       target.style.display = "none";
                     }}

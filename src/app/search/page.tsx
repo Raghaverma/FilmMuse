@@ -13,6 +13,8 @@ import EmptySearchState from "@/components/search/EmptySearchState";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useSearch } from "@/hooks/useSearch";
 
+import { Suspense } from "react";
+
 type Movie = {
   id: string;
   title: string;
@@ -21,9 +23,9 @@ type Movie = {
   poster?: string | null;
 };
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
-  
+
   const initialQuery = React.useMemo(() => (searchParams.get("q") || "").trim(), [searchParams]);
   const initialGenre = React.useMemo(() => (searchParams.get("genre") || "").trim(), [searchParams]);
 
@@ -115,23 +117,23 @@ export default function SearchPage() {
         />
 
         <div className="flex items-center gap-2 mb-4">
-            <Button
-              type="button"
-              variant={view === "grid" ? "default" : "secondary"}
-              className={view === "grid" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
-              onClick={() => setView("grid")}
-            >
-              Grid
-            </Button>
-            <Button
-              type="button"
-              variant={view === "list" ? "default" : "secondary"}
-              className={view === "list" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
-              onClick={() => setView("list")}
-            >
-              List
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant={view === "grid" ? "default" : "secondary"}
+            className={view === "grid" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
+            onClick={() => setView("grid")}
+          >
+            Grid
+          </Button>
+          <Button
+            type="button"
+            variant={view === "list" ? "default" : "secondary"}
+            className={view === "list" ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 hover:bg-white/15 text-neutral-200"}
+            onClick={() => setView("list")}
+          >
+            List
+          </Button>
+        </div>
 
         {error && (
           <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3">
@@ -156,25 +158,25 @@ export default function SearchPage() {
               genre={genre}
               query={query}
               onClearFilters={() => {
-                    setGenre("");
-                    setQuery("");
-                    handleClear();
-                  }}
+                setGenre("");
+                setQuery("");
+                handleClear();
+              }}
             />
           ) : (
             <>
               <SearchResults view={view} results={results} loading={loading} onUpdate={handleUpdate} />
 
-          {nextOffset !== null && !loading && (
-            <div className="mt-6 flex justify-center">
-              <Button
-                type="button"
-                onClick={handleLoadMore}
-                className="bg-white/10 hover:bg-white/15 text-neutral-200"
-              >
-                Load more
-              </Button>
-            </div>
+              {nextOffset !== null && !loading && (
+                <div className="mt-6 flex justify-center">
+                  <Button
+                    type="button"
+                    onClick={handleLoadMore}
+                    className="bg-white/10 hover:bg-white/15 text-neutral-200"
+                  >
+                    Load more
+                  </Button>
+                </div>
               )}
             </>
           )}
@@ -199,5 +201,13 @@ export default function SearchPage() {
         />
       )}
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a]" />}>
+      <SearchContent />
+    </Suspense>
   );
 }

@@ -28,6 +28,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     errorHandler.error("React Error Boundary caught an error", error, {
       componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
     });
   }
 

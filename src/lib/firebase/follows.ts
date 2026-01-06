@@ -38,7 +38,7 @@ export async function followUser(targetUserId: string): Promise<void> {
 
   // Check if already following
   const followDoc = await getDoc(followRef);
-  if (followDoc.exists) {
+  if (followDoc.exists()) {
     throw new Error("Already following this user");
   }
 
@@ -52,7 +52,7 @@ export async function followUser(targetUserId: string): Promise<void> {
   // Update follower's following count
   const followerStatsRef = doc(db, "userStats", user.uid);
   const followerStatsDoc = await getDoc(followerStatsRef);
-  if (followerStatsDoc.exists) {
+  if (followerStatsDoc.exists()) {
     await updateDoc(followerStatsRef, {
       followingCount: increment(1),
     });
@@ -66,7 +66,7 @@ export async function followUser(targetUserId: string): Promise<void> {
   // Update target user's followers count
   const targetStatsRef = doc(db, "userStats", targetUserId);
   const targetStatsDoc = await getDoc(targetStatsRef);
-  if (targetStatsDoc.exists) {
+  if (targetStatsDoc.exists()) {
     await updateDoc(targetStatsRef, {
       followersCount: increment(1),
     });
@@ -88,7 +88,7 @@ export async function unfollowUser(targetUserId: string): Promise<void> {
 
   // Check if following
   const followDoc = await getDoc(followRef);
-  if (!followDoc.exists) {
+  if (!followDoc.exists()) {
     throw new Error("Not following this user");
   }
 
@@ -101,7 +101,7 @@ export async function unfollowUser(targetUserId: string): Promise<void> {
   // Update follower's following count
   const followerStatsRef = doc(db, "userStats", user.uid);
   const followerStatsDoc = await getDoc(followerStatsRef);
-  if (followerStatsDoc.exists) {
+  if (followerStatsDoc.exists()) {
     await updateDoc(followerStatsRef, {
       followingCount: increment(-1),
     });
@@ -110,7 +110,7 @@ export async function unfollowUser(targetUserId: string): Promise<void> {
   // Update target user's followers count
   const targetStatsRef = doc(db, "userStats", targetUserId);
   const targetStatsDoc = await getDoc(targetStatsRef);
-  if (targetStatsDoc.exists) {
+  if (targetStatsDoc.exists()) {
     await updateDoc(targetStatsRef, {
       followersCount: increment(-1),
     });
@@ -124,7 +124,7 @@ export async function isFollowing(targetUserId: string): Promise<boolean> {
 
   const followId = `${user.uid}_${targetUserId}`;
   const followDoc = await getDoc(doc(db, "follows", followId));
-  return followDoc.exists && !followDoc.data()?.deleted;
+  return followDoc.exists() && !followDoc.data()?.deleted;
 }
 
 // Get followers of a user
@@ -164,7 +164,7 @@ export async function getFollowing(userId: string): Promise<string[]> {
 // Get user stats (followers/following counts)
 export async function getUserStats(userId: string): Promise<UserStats> {
   const statsDoc = await getDoc(doc(db, "userStats", userId));
-  if (statsDoc.exists) {
+  if (statsDoc.exists()) {
     const data = statsDoc.data();
     return {
       followersCount: data.followersCount || 0,
@@ -195,8 +195,8 @@ export async function searchUsers(searchQuery: string): Promise<UserSearchResult
       userData.email?.toLowerCase().includes(queryLower)
     ) {
       results.push({
-        uid: doc.id,
         ...userData,
+        uid: doc.id,
       });
     }
   });

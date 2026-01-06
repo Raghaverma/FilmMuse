@@ -14,10 +14,10 @@ export default function SuccessAnimation({
   onComplete,
 }: SuccessAnimationProps) {
   React.useEffect(() => {
-    if (onComplete) {
-      const timer = setTimeout(onComplete, 2000);
-      return () => clearTimeout(timer);
-    }
+    if (!onComplete) return;
+
+    const timer = window.setTimeout(onComplete, 2000);
+    return () => window.clearTimeout(timer);
   }, [onComplete]);
 
   return (

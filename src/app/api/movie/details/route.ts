@@ -43,16 +43,18 @@ export async function GET(req: Request) {
     });
     const { title, year } = params;
 
+    const parsedYear = year ? Number(year) : undefined;
+
     // Try TMDb first (primary source)
     let data: MovieDetails | null = null;
     let source = "tmdb";
-    
-    const tmdbData = await fetchTmdbOnce(title, year);
+
+    const tmdbData = await fetchTmdbOnce(title, parsedYear);
     if (tmdbData) {
       // Map TMDb data to unified format
       data = {
         title: tmdbData.title || title,
-        year: tmdbData.year || year,
+        year: tmdbData.year || parsedYear,
         runtime: tmdbData.runtime,
         genre: tmdbData.genre,
         director: tmdbData.director,
@@ -67,7 +69,7 @@ export async function GET(req: Request) {
         imdbRating: tmdbData.imdbRating,
         imdbVotes: tmdbData.imdbVotes,
         imdbID: tmdbData.imdbID,
-        backdrop: tmdbData.backdrop,
+        backdrop: tmdbData.backdrop || undefined,
         tagline: tmdbData.tagline,
         watchProviders: tmdbData.watchProviders,
         tmdbId: tmdbData.tmdbId,
@@ -80,18 +82,20 @@ export async function GET(req: Request) {
         metascore: undefined,
         boxOffice: undefined,
       };
-      
+
       // Try to get actual IMDb rating from OMDb if we have an IMDb ID
       // This gives us the real IMDb rating instead of TMDb's vote_average
       if (tmdbData.imdbID) {
         try {
-          const omdbData = await fetchOmdbOnce(title, year);
+          const omdbData = await fetchOmdbOnce(title, parsedYear);
           if (omdbData && omdbData.Response === "True" && omdbData.imdbRating && omdbData.imdbRating !== "N/A") {
             // Use actual IMDb rating from OMDb
-            data.imdbRating = omdbData.imdbRating;
-            data.imdbVotes = omdbData.imdbVotes;
-            data.metascore = omdbData.Metascore;
-            data.ratings = omdbData.Ratings || [];
+            if (data) {
+              data.imdbRating = omdbData.imdbRating;
+              data.imdbVotes = omdbData.imdbVotes;
+              data.metascore = omdbData.Metascore;
+              data.ratings = omdbData.Ratings || [];
+            }
           }
         } catch (error) {
           // Silently fail - we already have TMDb data
@@ -101,12 +105,12 @@ export async function GET(req: Request) {
     } else {
       // Fallback to OMDb
       source = "omdb";
-      const omdbData = await fetchOmdbOnce(title, year);
-      
+      const omdbData = await fetchOmdbOnce(title, parsedYear);
+
       if (omdbData && omdbData.Response === "True") {
         data = {
           title: omdbData.Title || title,
-          year: omdbData.Year ? parseInt(omdbData.Year) : year,
+          year: omdbData.Year ? parseInt(omdbData.Year) : parsedYear,
           rated: omdbData.Rated,
           released: omdbData.Released,
           runtime: omdbData.Runtime,
@@ -134,7 +138,7 @@ export async function GET(req: Request) {
     if (!data) {
       return NextResponse.json({
         title,
-        year,
+        year: parsedYear,
         error: `Details not available from TMDb or OMDb API`,
         plot: null,
         poster: null,
@@ -153,7 +157,7 @@ export async function GET(req: Request) {
     const title = searchParams.get("title") || "Unknown";
     const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined;
     const message = error instanceof Error ? error.message : "Invalid request";
-    
+
     return NextResponse.json({
       title,
       year,

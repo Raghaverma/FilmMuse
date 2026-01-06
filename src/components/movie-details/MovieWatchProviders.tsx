@@ -61,7 +61,7 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
                     width={24}
                     height={24}
                     className="object-contain"
-                    onError={(e: any) => {
+                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                       const target = e.currentTarget;
                       target.style.display = 'none';
                       const parent = target.parentElement;
@@ -99,7 +99,7 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
                     width={24}
                     height={24}
                     className="object-contain"
-                    onError={(e: any) => {
+                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                       const target = e.currentTarget;
                       target.style.display = 'none';
                       const parent = target.parentElement;
@@ -137,7 +137,7 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
                     width={24}
                     height={24}
                     className="object-contain"
-                    onError={(e: any) => {
+                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                       const target = e.currentTarget;
                       target.style.display = 'none';
                       const parent = target.parentElement;

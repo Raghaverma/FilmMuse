@@ -40,6 +40,7 @@ type TMDbMovieDetails = {
   revenue?: number;
   status?: string;
   tagline?: string;
+  original_language?: string;
   belongs_to_collection?: {
     id: number;
     name: string;

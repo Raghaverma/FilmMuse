@@ -78,7 +78,6 @@ export default function SectionDiscover() {
                 title={movie.title}
                 year={movie.year}
                 poster={movie.poster}
-                meta={movie.meta}
 
                 onUpdate={refreshPersonalized}
               />

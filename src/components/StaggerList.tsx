@@ -9,10 +9,10 @@ interface StaggerListProps {
   staggerDelay?: number;
 }
 
-export default function StaggerList({ 
-  children, 
+export default function StaggerList({
+  children,
   className = "",
-  staggerDelay = 0.05 
+  staggerDelay = 0.05
 }: StaggerListProps) {
   const container = {
     hidden: { opacity: 0 },
@@ -26,12 +26,12 @@ export default function StaggerList({
 
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: { 
-      opacity: 1, 
+    show: {
+      opacity: 1,
       y: 0,
       transition: {
         duration: 0.3,
-        ease: [0.22, 1, 0.36, 1],
+        ease: [0.22, 1, 0.36, 1] as const,
       },
     },
   };
