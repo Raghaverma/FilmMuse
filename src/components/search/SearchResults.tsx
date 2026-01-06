@@ -40,7 +40,7 @@ export default function SearchResults({ view, results, loading, onUpdate }: Sear
             year={movie.year}
             poster={movie.poster}
             meta={movie.meta}
-            showInteraction={true}
+
             onUpdate={onUpdate}
           />
         ))}
@@ -61,7 +61,7 @@ export default function SearchResults({ view, results, loading, onUpdate }: Sear
             year={movie.year}
             poster={movie.poster}
             meta={movie.meta}
-            showInteraction={true}
+
             onUpdate={onUpdate}
           />
         </div>

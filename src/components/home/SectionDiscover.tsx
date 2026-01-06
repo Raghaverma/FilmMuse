@@ -42,8 +42,8 @@ export default function SectionDiscover() {
                     title={movie.title}
                     year={movie.year}
                     poster={movie.poster}
-                    meta={movie.meta}
-                    showInteraction={true}
+
+
                     onUpdate={refreshPersonalized}
                   />
                 ))}
@@ -58,7 +58,7 @@ export default function SectionDiscover() {
               {personalizedRecs.length > 0 ? "Discover New Movies" : "Today's curated lineup"}
             </h2>
             <p className="text-sm text-muted-foreground dark:text-neutral-400">
-              {personalizedRecs.length > 0 
+              {personalizedRecs.length > 0
                 ? "Random recommendations from our collection"
                 : "Handpicked films for your viewing pleasure"}
             </p>
@@ -79,7 +79,7 @@ export default function SectionDiscover() {
                 year={movie.year}
                 poster={movie.poster}
                 meta={movie.meta}
-                showInteraction={true}
+
                 onUpdate={refreshPersonalized}
               />
             ))}

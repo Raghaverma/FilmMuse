@@ -100,11 +100,10 @@ export default function MovieSimilar({ tmdbId, onMovieClick }: MovieSimilarProps
             {similarMovies.length > 0 && (
               <button
                 onClick={() => setActiveTab("similar")}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  activeTab === "similar"
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${activeTab === "similar"
                     ? "bg-emerald-400 text-black"
                     : "bg-white/5 text-neutral-300 hover:bg-white/10"
-                }`}
+                  }`}
               >
                 Similar
               </button>
@@ -112,11 +111,10 @@ export default function MovieSimilar({ tmdbId, onMovieClick }: MovieSimilarProps
             {recommendedMovies.length > 0 && (
               <button
                 onClick={() => setActiveTab("recommended")}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  activeTab === "recommended"
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${activeTab === "recommended"
                     ? "bg-emerald-400 text-black"
                     : "bg-white/5 text-neutral-300 hover:bg-white/10"
-                }`}
+                  }`}
               >
                 Recommended
               </button>
@@ -170,7 +168,7 @@ export default function MovieSimilar({ tmdbId, onMovieClick }: MovieSimilarProps
                   title={movie.title}
                   year={year}
                   poster={poster}
-                  showInteraction={false}
+
                   onBeforeOpen={onMovieClick}
                 />
               </motion.div>

@@ -2,9 +2,8 @@
 import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Calendar, Film, Play, Plus, Info, Check } from "lucide-react";
+import { Star, Film, Play, Plus, Info } from "lucide-react";
 import { getUserRatings } from "@/lib/auth-client";
-import MovieInteraction from "./MovieInteraction";
 import MovieDetailsModal from "./MovieDetailsModal";
 
 type Props = {
@@ -13,12 +12,12 @@ type Props = {
   year?: number;
   poster?: string | null;
   meta?: string;
-  showInteraction?: boolean;
+
   onUpdate?: () => void;
   onBeforeOpen?: () => void;
 };
 
-export default function MovieCard({ id, title, year, poster, meta, showInteraction = false, onUpdate, onBeforeOpen }: Props) {
+export default function MovieCard({ id, title, year, poster, meta, onUpdate, onBeforeOpen }: Props) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [src, setSrc] = React.useState<string | null>(poster ?? null);
   const [loading, setLoading] = React.useState<boolean>(!poster);

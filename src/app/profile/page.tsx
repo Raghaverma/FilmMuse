@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   getUserWatchlist,
@@ -19,12 +18,11 @@ import { getUserProfile } from "@/lib/firebase/auth";
 import { getFriendCount } from "@/lib/firebase/friends";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { Share2, Plus, ArrowLeft, Grid3X3, Heart, Bookmark, Star, Users, RefreshCw, BarChart3, Settings, LogOut } from "lucide-react";
+import { Plus, Grid3X3, Heart, Bookmark, Star, Users, RefreshCw, Settings } from "lucide-react";
 import ShareListDialog from "@/components/ShareListDialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import { normalizeList } from "@/lib/profile-helpers";
-import { User, Film } from "lucide-react";
 import CreateListDialog from "@/components/profile/CreateListDialog";
 import EditListDialog from "@/components/profile/EditListDialog";
 import WatchlistTab from "@/components/profile/WatchlistTab";
@@ -34,7 +32,6 @@ import RatingsTab from "@/components/profile/RatingsTab";
 import FriendsTab from "@/components/profile/FriendsTab";
 import { ProfileHeaderSkeleton } from "@/components/ui/skeleton";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
@@ -186,35 +183,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleShareCollection = async (name: string, movies: Array<{ id: string; title: string; year?: number; poster?: string | null }>) => {
-    if (movies.length === 0) {
-      toast.error("Cannot share an empty collection");
-      return;
-    }
-
-    try {
-      const tempList = await createCustomList(name, `Shared ${name.toLowerCase()}`);
-
-      const { addMovieToCustomList } = await import("@/lib/firebase/firestore");
-      for (const movie of movies) {
-        await addMovieToCustomList(tempList.id, movie);
-      }
-
-      setShareDialog({
-        open: true,
-        listId: tempList.id,
-        listName: tempList.name,
-        sharedWith: tempList.sharedWith || [],
-        isPublic: tempList.isPublic || false,
-      });
-
-      await refreshData();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to create shareable list";
-      toast.error(message);
-    }
-  };
-
   const handleShareList = (list: { id: string; name: string; sharedWith?: string[]; isPublic?: boolean }) => {
     setShareDialog({
       open: true,
@@ -319,7 +287,7 @@ export default function ProfilePage() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => setActiveTab(tab.id as any)}
                     className={cn(
                       "w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
 
@@ -107,11 +108,10 @@ export default function MovieFullCast({ tmdbId }: MovieFullCastProps) {
             {cast.length > 0 && (
               <button
                 onClick={() => setActiveTab("cast")}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  activeTab === "cast"
-                    ? "bg-emerald-400 text-black"
-                    : "bg-white/5 text-neutral-300 hover:bg-white/10"
-                }`}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${activeTab === "cast"
+                  ? "bg-emerald-400 text-black"
+                  : "bg-white/5 text-neutral-300 hover:bg-white/10"
+                  }`}
               >
                 Cast ({cast.length})
               </button>
@@ -119,11 +119,10 @@ export default function MovieFullCast({ tmdbId }: MovieFullCastProps) {
             {crew.length > 0 && (
               <button
                 onClick={() => setActiveTab("crew")}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  activeTab === "crew"
-                    ? "bg-emerald-400 text-black"
-                    : "bg-white/5 text-neutral-300 hover:bg-white/10"
-                }`}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${activeTab === "crew"
+                  ? "bg-emerald-400 text-black"
+                  : "bg-white/5 text-neutral-300 hover:bg-white/10"
+                  }`}
               >
                 Crew ({importantCrew.length})
               </button>
@@ -145,12 +144,12 @@ export default function MovieFullCast({ tmdbId }: MovieFullCastProps) {
               >
                 <div className="relative w-full aspect-[2/3] bg-white/5 rounded-lg overflow-hidden mb-2 border border-white/10">
                   {member.profile_path ? (
-                    <img
+                    <Image
                       src={`${IMAGE_BASE_URL}${member.profile_path}`}
                       alt={member.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
+                      fill
+                      className="object-cover"
+                      onError={(e: any) => {
                         const target = e.currentTarget;
                         target.style.display = "none";
                         const parent = target.parentElement;
@@ -209,12 +208,13 @@ export default function MovieFullCast({ tmdbId }: MovieFullCastProps) {
                     className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10"
                   >
                     {member.profile_path ? (
-                      <img
+                      <Image
                         src={`${IMAGE_BASE_URL}${member.profile_path}`}
                         alt={member.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
+                        width={48}
+                        height={48}
+                        className="rounded-full object-cover"
+                        onError={(e: any) => {
                           const target = e.currentTarget;
                           target.style.display = "none";
                         }}

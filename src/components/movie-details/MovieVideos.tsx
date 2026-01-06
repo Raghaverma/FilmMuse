@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Play, Film, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -57,13 +58,13 @@ export default function MovieVideos({ tmdbId }: MovieVideosProps) {
 
   React.useEffect(() => {
     if (!selectedVideo) return;
-    
+
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelectedVideo(null);
       }
     };
-    
+
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [selectedVideo]);
@@ -135,13 +136,14 @@ export default function MovieVideos({ tmdbId }: MovieVideosProps) {
               <div className="relative aspect-video bg-white/5 rounded-lg overflow-hidden border border-white/10 group-hover:border-emerald-400/50 transition-colors">
                 {video.site === "YouTube" ? (
                   <>
-                    <img
+                    <Image
                       src={`https://img.youtube.com/vi/${video.key}/maxresdefault.jpg`}
                       alt={video.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
+                      fill
+                      className="object-cover"
+                      onError={(e: any) => {
                         const target = e.currentTarget;
-                        target.src = `https://img.youtube.com/vi/${video.key}/hqdefault.jpg`;
+                        target.style.display = "none";
                       }}
                     />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">

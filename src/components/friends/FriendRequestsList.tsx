@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { Check, X, UserPlus } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -147,11 +148,13 @@ export default function FriendRequestsList({ onUpdate }: FriendRequestsListProps
           <div className="flex items-center gap-4">
             <div className="relative flex-shrink-0">
               {request.requesterPhotoURL ? (
-                <img
+                <Image
                   src={request.requesterPhotoURL}
                   alt={request.requesterUsername}
-                  className="w-12 h-12 rounded-lg object-cover border-2 border-emerald-400/30"
-                  onError={(e) => {
+                  width={48}
+                  height={48}
+                  className="rounded-lg object-cover border-2 border-emerald-400/30"
+                  onError={(e: any) => {
                     const target = e.currentTarget;
                     target.style.display = "none";
                     const fallback = target.parentElement?.querySelector(".fallback-avatar") as HTMLElement;

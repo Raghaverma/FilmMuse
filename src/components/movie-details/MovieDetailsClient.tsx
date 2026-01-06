@@ -32,16 +32,44 @@ const formatRuntime = (minutes: number) => {
     return `${h}h ${m}m`;
 };
 
+interface CastMember {
+    id: number;
+    name: string;
+    character: string;
+    profile_path: string | null;
+    order?: number;
+}
+
+
+
+interface Movie {
+    id: number;
+    title: string;
+    backdrop_path: string | null;
+    tagline?: string;
+    release_date: string;
+    runtime: number;
+    vote_average: number;
+    genres: { id: number; name: string }[];
+    overview: string;
+    budget: number;
+    original_language: string;
+    poster_path?: string | null;
+}
+
 type Props = {
-    movie: any;
-    credits: any;
-    similar: any[];
+    movie: Movie;
+    credits: {
+        crew: Array<{ job: string; name: string }>;
+        cast: CastMember[];
+    };
+    similar: Array<{ id: number; title: string; release_date?: string; poster_path?: string | null }>;
 };
 
 export default function MovieDetailsClient({ movie, credits, similar }: Props) {
     const router = useRouter();
 
-    const director = credits?.crew?.find((person: any) => person.job === "Director");
+    const director = credits?.crew?.find((person: { job: string; name: string }) => person.job === "Director");
     // writers casting to avoid undefined errors if crew is missing (handled by optional chaining mostly but good to be safe)
     const cast = credits?.cast?.slice(0, 10) || [];
 
@@ -89,7 +117,7 @@ export default function MovieDetailsClient({ movie, credits, similar }: Props) {
                             </h1>
                             {movie.tagline && (
                                 <p className="text-xl md:text-2xl text-neutral-300 font-light italic text-pretty">
-                                    "{movie.tagline}"
+                                    &quot;{movie.tagline}&quot;
                                 </p>
                             )}
                         </div>
@@ -117,7 +145,7 @@ export default function MovieDetailsClient({ movie, credits, similar }: Props) {
 
                             {/* Genres */}
                             <div className="flex items-center gap-2">
-                                {movie.genres?.map((g: any) => (
+                                {movie.genres?.map((g: { id: number; name: string }) => (
                                     <Badge key={g.id} variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-neutral-200">
                                         {g.name}
                                     </Badge>
@@ -154,7 +182,7 @@ export default function MovieDetailsClient({ movie, credits, similar }: Props) {
                         <h2 className="text-2xl font-semibold border-l-4 border-primary pl-4">Top Cast</h2>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {cast.map((actor: any) => (
+                        {cast.map((actor: CastMember) => (
                             <div key={actor.id} className="group relative">
                                 <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-neutral-900 border border-white/5">
                                     {actor.profile_path ? (
@@ -204,8 +232,14 @@ export default function MovieDetailsClient({ movie, credits, similar }: Props) {
                             <h2 className="text-2xl font-semibold border-l-4 border-primary pl-4">You May Also Like</h2>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {similar.map((movie: any) => (
-                                <MovieCard key={movie.id} id={`tmdb-${movie.id}`} title={movie.title} year={movie.release_date?.split('-')[0]} poster={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null} showInteraction={true} />
+                            {similar.map((movie: { id: number; title: string; release_date?: string; poster_path?: string | null }) => (
+                                <MovieCard
+                                    key={movie.id}
+                                    id={`tmdb-${movie.id}`}
+                                    title={movie.title}
+                                    year={movie.release_date ? parseInt(movie.release_date.split('-')[0]) : undefined}
+                                    poster={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null}
+                                />
                             ))}
                         </div>
                     </section>

@@ -121,7 +121,7 @@ export default function MovieRow({ title, description, endpoint, icon }: MovieRo
                                 title={movie.title}
                                 year={year}
                                 poster={poster}
-                                showInteraction={true}
+
                             />
                         );
                     })}

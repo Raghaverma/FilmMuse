@@ -67,11 +67,7 @@ function initOnce() {
   READY = true;
 }
 
-function parseNum(n: string | null, fallback: number, min: number, max: number) {
-  const v = Number(n);
-  if (!Number.isFinite(v)) return fallback;
-  return Math.max(min, Math.min(max, v));
-}
+
 
 // Relevance ranking: prefix > token match > substring; stable alphabetical within tiers
 function rankAndSort(pool: Row[], qn: string): Row[] {
@@ -90,10 +86,10 @@ function rankAndSort(pool: Row[], qn: string): Row[] {
       prefix.push(r);
     } else {
       // Check if any token matches
-      const hasTokenMatch = qnTokens.some(qt => 
+      const hasTokenMatch = qnTokens.some(qt =>
         r._tokens.some(rt => rt.startsWith(qt) || rt.includes(qt))
       );
-      
+
       if (hasTokenMatch) {
         tokenMatch.push(r);
       } else if (r._lcTitle.includes(qn)) {
@@ -123,163 +119,163 @@ export async function GET(req: Request) {
     const validated = validateRequest(movieSearchSchema, params);
     const q = validated.q || "";
     const genre = validated.genre || "";
-    const limit = validated.limit;
-    const offset = validated.offset;
+    const limit = validated.limit || 50;
+    const offset = validated.offset || 0;
 
-  let pool: Row[] = ROWS;
-  if (genre) {
-    const key = norm(genre);
-    pool = GENRE_MAP.get(key) ?? [];
-  }
+    let pool: Row[] = ROWS;
+    if (genre) {
+      const key = norm(genre);
+      pool = GENRE_MAP.get(key) ?? [];
+    }
 
-  const qn = norm(q);
-  let result = qn ? rankAndSort(pool, qn) : [...pool].sort((a, b) => a.title.localeCompare(b.title));
-  
-  // Always search TMDb when there's a query to get comprehensive results
-  let tmdbResults: Array<{ id: string; title: string; year?: number; genres: string[]; meta?: string; poster: string | null }> = [];
-  let source: "index" | "fallback" | "mixed" = "index";
-  const collectionIds = new Set<number>();
-  
-  if (qn) {
-    try {
-      // Fetch multiple pages from TMDb to get more results
-      const pagesToFetch = 3; // Fetch up to 3 pages (60 movies)
-      const allTmdbMovies: Array<{ id: number; title: string; release_date?: string; poster_path?: string | null; overview?: string }> = [];
-      
-      for (let page = 1; page <= pagesToFetch; page++) {
-        const tmdbData = await searchMovies(q.trim(), page);
-        if (tmdbData && tmdbData.results.length > 0) {
-          allTmdbMovies.push(...tmdbData.results);
-          // Stop if we've reached the last page
-          if (page >= tmdbData.total_pages) break;
-        } else {
-          break;
-        }
-      }
-      
-      if (allTmdbMovies.length > 0) {
-        // Create a set of local movie IDs for deduplication
-        const localIds = new Set(result.map(m => m.id.toLowerCase()));
-        
-        // Convert TMDb results to our format and filter out duplicates
-        tmdbResults = allTmdbMovies
-          .map((movie) => {
-            const year = movie.release_date ? parseInt(movie.release_date.split("-")[0]) : undefined;
-            const tmdbId = `tmdb-${movie.id}`;
-            
-            // Skip if this movie is already in local results
-            if (localIds.has(tmdbId.toLowerCase()) || localIds.has(movie.id.toString())) {
-              return null;
-            }
-            
-            return {
-              id: tmdbId,
-              title: movie.title,
-              year: year,
-              genres: [],
-              meta: movie.overview || undefined,
-              poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
-            };
-          })
-          .filter((m): m is NonNullable<typeof m> => m !== null);
-        
-        // Check if any of the first few results belong to collections
-        // Fetch full details for first 3 results to check for collections (with timeout)
-        const moviesToCheck = allTmdbMovies.slice(0, 3);
-        const checkPromises = moviesToCheck.map(async (movie) => {
-          try {
-            const KEY = process.env.TMDB_API_KEY;
-            if (!KEY) return null;
-            
-            const detailsUrl = `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${KEY}`;
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 2000);
-            
-            try {
-              const detailsRes = await fetch(detailsUrl, { signal: controller.signal });
-              clearTimeout(timeout);
-              if (detailsRes.ok) {
-                const details = await detailsRes.json();
-                return details.belongs_to_collection?.id || null;
-              }
-            } catch (error) {
-              clearTimeout(timeout);
-              return null;
-            }
-          } catch (error) {
-            return null;
+    const qn = norm(q);
+    let result = qn ? rankAndSort(pool, qn) : [...pool].sort((a, b) => a.title.localeCompare(b.title));
+
+    // Always search TMDb when there's a query to get comprehensive results
+    let tmdbResults: Array<{ id: string; title: string; year?: number; genres: string[]; meta?: string; poster: string | null }> = [];
+    let source: "index" | "fallback" | "mixed" = "index";
+    const collectionIds = new Set<number>();
+
+    if (qn) {
+      try {
+        // Fetch multiple pages from TMDb to get more results
+        const pagesToFetch = 3; // Fetch up to 3 pages (60 movies)
+        const allTmdbMovies: Array<{ id: number; title: string; release_date?: string; poster_path?: string | null; overview?: string }> = [];
+
+        for (let page = 1; page <= pagesToFetch; page++) {
+          const tmdbData = await searchMovies(q.trim(), page);
+          if (tmdbData && tmdbData.results.length > 0) {
+            allTmdbMovies.push(...tmdbData.results);
+            // Stop if we've reached the last page
+            if (page >= tmdbData.total_pages) break;
+          } else {
+            break;
           }
-          return null;
-        });
-        
-        const collectionIdResults = await Promise.all(checkPromises);
-        collectionIdResults.forEach(id => {
-          if (id) collectionIds.add(id);
-        });
-        
-        // Fetch collections and include all movies from them
-        for (const collectionId of collectionIds) {
-          try {
-            const collection = await fetchCollection(collectionId);
-            if (collection && collection.parts) {
-              const existingIds = new Set([
-                ...result.map(m => m.id.toLowerCase()),
-                ...tmdbResults.map(m => m.id.toLowerCase()),
-              ]);
-              
-              for (const part of collection.parts) {
-                const tmdbId = `tmdb-${part.id}`;
-                if (!existingIds.has(tmdbId.toLowerCase())) {
-                  const year = part.release_date ? parseInt(part.release_date.split("-")[0]) : undefined;
-                  tmdbResults.push({
-                    id: tmdbId,
-                    title: part.title,
-                    year: year,
-                    genres: [],
-                    meta: undefined,
-                    poster: part.poster_path ? `https://image.tmdb.org/t/p/w500${part.poster_path}` : null,
-                  });
+        }
+
+        if (allTmdbMovies.length > 0) {
+          // Create a set of local movie IDs for deduplication
+          const localIds = new Set(result.map(m => m.id.toLowerCase()));
+
+          // Convert TMDb results to our format and filter out duplicates
+          tmdbResults = allTmdbMovies
+            .map((movie) => {
+              const year = movie.release_date ? parseInt(movie.release_date.split("-")[0]) : undefined;
+              const tmdbId = `tmdb-${movie.id}`;
+
+              // Skip if this movie is already in local results
+              if (localIds.has(tmdbId.toLowerCase()) || localIds.has(movie.id.toString())) {
+                return null;
+              }
+
+              return {
+                id: tmdbId,
+                title: movie.title,
+                year: year,
+                genres: [],
+                meta: movie.overview || undefined,
+                poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
+              };
+            })
+            .filter((m): m is NonNullable<typeof m> => m !== null);
+
+          // Check if any of the first few results belong to collections
+          // Fetch full details for first 3 results to check for collections (with timeout)
+          const moviesToCheck = allTmdbMovies.slice(0, 3);
+          const checkPromises = moviesToCheck.map(async (movie) => {
+            try {
+              const KEY = process.env.TMDB_API_KEY;
+              if (!KEY) return null;
+
+              const detailsUrl = `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${KEY}`;
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 2000);
+
+              try {
+                const detailsRes = await fetch(detailsUrl, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (detailsRes.ok) {
+                  const details = await detailsRes.json();
+                  return details.belongs_to_collection?.id || null;
+                }
+              } catch {
+                clearTimeout(timeout);
+                return null;
+              }
+            } catch {
+              return null;
+            }
+            return null;
+          });
+
+          const collectionIdResults = await Promise.all(checkPromises);
+          collectionIdResults.forEach(id => {
+            if (id) collectionIds.add(id);
+          });
+
+          // Fetch collections and include all movies from them
+          for (const collectionId of collectionIds) {
+            try {
+              const collection = await fetchCollection(collectionId);
+              if (collection && collection.parts) {
+                const existingIds = new Set([
+                  ...result.map(m => m.id.toLowerCase()),
+                  ...tmdbResults.map(m => m.id.toLowerCase()),
+                ]);
+
+                for (const part of collection.parts) {
+                  const tmdbId = `tmdb-${part.id}`;
+                  if (!existingIds.has(tmdbId.toLowerCase())) {
+                    const year = part.release_date ? parseInt(part.release_date.split("-")[0]) : undefined;
+                    tmdbResults.push({
+                      id: tmdbId,
+                      title: part.title,
+                      year: year,
+                      genres: [],
+                      meta: undefined,
+                      poster: part.poster_path ? `https://image.tmdb.org/t/p/w500${part.poster_path}` : null,
+                    });
+                  }
                 }
               }
+            } catch (error) {
+              // Silently fail - collection fetch is optional
+              console.debug("[search] Failed to fetch collection:", error);
             }
-          } catch (error) {
-            // Silently fail - collection fetch is optional
-            console.debug("[search] Failed to fetch collection:", error);
           }
+
+          // Merge results: local first, then TMDb
+          result = [...result, ...tmdbResults.map(tr => ({
+            id: tr.id,
+            title: tr.title,
+            year: tr.year,
+            genres: tr.genres,
+            poster: tr.poster,
+            meta: tr.meta,
+            _lcTitle: tr.title.toLowerCase(),
+            _tokens: tokenizeTitle(tr.title),
+          }))];
+
+          source = result.length > tmdbResults.length ? "mixed" : "fallback";
         }
-        
-        // Merge results: local first, then TMDb
-        result = [...result, ...tmdbResults.map(tr => ({
-          id: tr.id,
-          title: tr.title,
-          year: tr.year,
-          genres: tr.genres,
-          poster: tr.poster,
-          meta: tr.meta,
-          _lcTitle: tr.title.toLowerCase(),
-          _tokens: tokenizeTitle(tr.title),
-        }))];
-        
-        source = result.length > tmdbResults.length ? "mixed" : "fallback";
+      } catch (error) {
+        // Silently fail TMDb search - just use local results
+        console.debug("[search] TMDb search failed:", error);
       }
-    } catch (error) {
-      // Silently fail TMDb search - just use local results
-      console.debug("[search] TMDb search failed:", error);
     }
-  }
 
-  const total = result.length;
-  const slice = result.slice(offset, offset + limit);
+    const total = result.length;
+    const slice = result.slice(offset, offset + limit);
 
-  // IMPORTANT: do NOT fetch OMDb here. Only return local fields.
-  const items = slice.map((m) => ({
-    id: m.id,
-    title: m.title,
-    year: m.year,
-    genres: m.genres ?? [],
-    meta: m.meta,
-    poster: m.poster ?? null, // may be null → client can lazy-load via /api/poster
-  }));
+    // IMPORTANT: do NOT fetch OMDb here. Only return local fields.
+    const items = slice.map((m) => ({
+      id: m.id,
+      title: m.title,
+      year: m.year,
+      genres: m.genres ?? [],
+      meta: m.meta,
+      poster: m.poster ?? null, // may be null → client can lazy-load via /api/poster
+    }));
 
     return NextResponse.json({
       items,
@@ -292,3 +288,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+

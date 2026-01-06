@@ -1,4 +1,4 @@
-import type { UserProfile } from "@/lib/firebase/firestore";
+
 
 export interface UserSearchParams {
   query: string;

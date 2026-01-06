@@ -4,9 +4,8 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Search, Film, Calendar, ArrowRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 
 type SearchResult = {
     id: number;
@@ -117,7 +116,7 @@ export default function CommandPalette() {
 
                     {query && !loading && results.length === 0 && (
                         <div className="px-4 py-8 text-center text-neutral-500 text-sm">
-                            No results found for "{query}"
+                            No results found for &quot;{query}&quot;
                         </div>
                     )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Play, ShoppingCart, CreditCard } from "lucide-react";
 
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w92";
@@ -27,7 +28,7 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
     return null;
   }
 
-  const hasAnyProviders = 
+  const hasAnyProviders =
     (watchProviders.flatrate && watchProviders.flatrate.length > 0) ||
     (watchProviders.rent && watchProviders.rent.length > 0) ||
     (watchProviders.buy && watchProviders.buy.length > 0);
@@ -39,7 +40,7 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
   return (
     <div className="mb-6">
       <h3 className="text-lg font-semibold text-white mb-4">Where to Watch</h3>
-      
+
       {watchProviders.flatrate && watchProviders.flatrate.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
@@ -54,12 +55,13 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
                 title={provider.provider_name}
               >
                 {provider.logo_path ? (
-                  <img
+                  <Image
                     src={`${IMAGE_BASE_URL}${provider.logo_path}`}
                     alt={provider.provider_name}
-                    className="h-6 w-auto object-contain"
-                    loading="lazy"
-                    onError={(e) => {
+                    width={24}
+                    height={24}
+                    className="object-contain"
+                    onError={(e: any) => {
                       const target = e.currentTarget;
                       target.style.display = 'none';
                       const parent = target.parentElement;
@@ -91,12 +93,13 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
                 title={provider.provider_name}
               >
                 {provider.logo_path ? (
-                  <img
+                  <Image
                     src={`${IMAGE_BASE_URL}${provider.logo_path}`}
                     alt={provider.provider_name}
-                    className="h-6 w-auto object-contain"
-                    loading="lazy"
-                    onError={(e) => {
+                    width={24}
+                    height={24}
+                    className="object-contain"
+                    onError={(e: any) => {
                       const target = e.currentTarget;
                       target.style.display = 'none';
                       const parent = target.parentElement;
@@ -128,12 +131,13 @@ export default function MovieWatchProviders({ watchProviders }: MovieWatchProvid
                 title={provider.provider_name}
               >
                 {provider.logo_path ? (
-                  <img
+                  <Image
                     src={`${IMAGE_BASE_URL}${provider.logo_path}`}
                     alt={provider.provider_name}
-                    className="h-6 w-auto object-contain"
-                    loading="lazy"
-                    onError={(e) => {
+                    width={24}
+                    height={24}
+                    className="object-contain"
+                    onError={(e: any) => {
                       const target = e.currentTarget;
                       target.style.display = 'none';
                       const parent = target.parentElement;

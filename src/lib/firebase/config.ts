@@ -1,7 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
-import { getAnalytics, type Analytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -27,7 +27,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
 if (typeof window !== 'undefined') {
   const requiredFields = ['apiKey', 'authDomain', 'projectId', 'appId'];
   const missingFields = requiredFields.filter(field => !firebaseConfig[field as keyof typeof firebaseConfig]);
-  
+
   if (missingFields.length > 0) {
     console.error('Firebase configuration missing:', missingFields);
     console.error('Please check your .env file has all NEXT_PUBLIC_FIREBASE_* variables set');

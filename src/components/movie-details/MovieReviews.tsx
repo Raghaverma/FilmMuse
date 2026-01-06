@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -144,11 +145,13 @@ export default function MovieReviews({ tmdbId }: MovieReviewsProps) {
             >
               <div className="flex items-start gap-3 mb-3">
                 {review.author_details.avatar_path ? (
-                  <img
+                  <Image
                     src={`${IMAGE_BASE_URL}${review.author_details.avatar_path}`}
                     alt={review.author_details.name || review.author}
-                    className="w-10 h-10 rounded-full object-cover"
-                    onError={(e) => {
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
+                    onError={(e: any) => {
                       const target = e.currentTarget;
                       target.style.display = "none";
                     }}

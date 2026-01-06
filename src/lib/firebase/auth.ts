@@ -173,33 +173,35 @@ export async function signInWithGoogle(): Promise<User> {
     }
 
     return user;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle Firebase Auth errors
     console.error("Google sign-in raw error:", error);
 
+    const safeError = error as { code?: string; message?: string; customData?: any; stack?: string };
+
     // Attempt to extract meaningful error info even if it appears empty
     const errorDetails = {
-      code: error?.code,
-      message: error?.message,
-      customData: error?.customData,
-      stack: error?.stack,
+      code: safeError?.code,
+      message: safeError?.message,
+      customData: safeError?.customData,
+      stack: safeError?.stack,
       // Inspect all properties in case of weird Error objects
       serialized: JSON.stringify(error, Object.getOwnPropertyNames(error))
     };
 
     console.error('Google sign-in detailed error:', errorDetails);
 
-    if (error?.code === 'auth/popup-blocked') {
+    if (safeError?.code === 'auth/popup-blocked') {
       throw new Error('Popups are blocked. Please allow popups for this site and try again.');
     }
-    if (error?.code === 'auth/popup-closed-by-user') {
+    if (safeError?.code === 'auth/popup-closed-by-user') {
       throw new Error('Sign-in was cancelled. Please try again.');
     }
-    if (error?.code === 'auth/operation-not-allowed') {
+    if (safeError?.code === 'auth/operation-not-allowed') {
       throw new Error('Google sign-in is not enabled. Please enable it in Firebase Console under Authentication > Sign-in method.');
     }
-    if (error?.code === 'auth/internal-error') {
-      const errorMsg = error.message || 'An internal error occurred';
+    if (safeError?.code === 'auth/internal-error') {
+      const errorMsg = safeError.message || 'An internal error occurred';
       if (errorMsg.includes('operation-not-allowed') || errorMsg.includes('not enabled')) {
         throw new Error('Google sign-in is not enabled. Please enable it in Firebase Console under Authentication > Sign-in method.');
       }
@@ -208,11 +210,11 @@ export async function signInWithGoogle(): Promise<User> {
       }
       throw new Error(`Google sign-in error: ${errorMsg}`);
     }
-    if (error?.code === 'auth/unauthorized-domain') {
+    if (safeError?.code === 'auth/unauthorized-domain') {
       throw new Error('This domain is not authorized. Please add localhost to authorized domains in Firebase Console > Authentication > Settings.');
     }
 
-    throw new Error(error?.message || "Failed to sign in with Google");
+    throw new Error(safeError?.message || "Failed to sign in with Google");
   }
 }
 

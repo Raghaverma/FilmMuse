@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Film } from "lucide-react";
+import { X } from "lucide-react";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getUserRatings } from "@/lib/firebase/firestore";
 import MovieHero from "./movie-details/MovieHero";
@@ -46,6 +46,7 @@ type MovieDetails = {
   };
   tmdbId?: number;
   collectionId?: number;
+  error?: string;
 };
 
 type Props = {
@@ -84,20 +85,20 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
       try {
         const url = `/api/movie/details?title=${encodeURIComponent(movie.title)}${movie.year ? `&year=${movie.year}` : ""}`;
         const res = await fetch(url);
-        
+
         if (cancelled) return;
-        
+
         // Always try to parse JSON, even if status is not ok
         // The API now returns 200 even with errors
         const contentType = res.headers.get("content-type");
         if (!contentType?.includes("application/json")) {
           throw new Error("Invalid response type");
         }
-        
+
         const data = await res.json();
-        
+
         if (cancelled) return;
-        
+
         // Always set details if we have data, even if it contains an error
         // This allows the modal to display basic info (title, year)
         if (data && data.title) {
@@ -117,7 +118,7 @@ export default function MovieDetailsModal({ movie, isOpen, onClose, onUpdate }: 
             title: movie.title,
             year: movie.year,
             error: err instanceof Error ? err.message : "Failed to load movie details",
-            plot: null,
+            plot: undefined,
             poster: movie.poster || null,
           });
           setError("Failed to load movie details");

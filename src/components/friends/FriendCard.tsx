@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { User, UserMinus } from "lucide-react";
+import { UserMinus } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { motion } from "framer-motion";
@@ -73,11 +74,13 @@ export default function FriendCard({ friend, onRemove }: FriendCardProps) {
       <Link href={`/profile?userId=${friend.userId}`} className="flex items-center gap-4">
         <div className="relative flex-shrink-0">
           {friend.photoURL ? (
-            <img
+            <Image
               src={friend.photoURL}
               alt={friend.username}
-              className="w-16 h-16 rounded-lg object-cover border-2 border-emerald-400/30"
-              onError={(e) => {
+              width={64}
+              height={64}
+              className="rounded-lg object-cover border-2 border-emerald-400/30"
+              onError={(e: any) => {
                 const target = e.currentTarget;
                 target.style.display = "none";
                 const fallback = target.parentElement?.querySelector(".fallback-avatar") as HTMLElement;

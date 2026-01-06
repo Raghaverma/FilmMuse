@@ -26,7 +26,7 @@ interface MovieHeroProps {
 
 export default function MovieHero({ details, movie, onUpdate }: MovieHeroProps) {
   const { user } = useAuth();
-  const [userRating, setUserRating] = React.useState(0);
+  const [, setUserRating] = React.useState(0);
 
   React.useEffect(() => {
     const loadRating = async () => {
@@ -49,11 +49,12 @@ export default function MovieHero({ details, movie, onUpdate }: MovieHeroProps) 
   return (
     <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
       {details.poster ? (
-        <img
+        <Image
           src={details.poster}
           alt={details.title}
-          className="w-full h-full object-cover"
-          onError={(e) => {
+          fill
+          className="object-cover"
+          onError={(e: any) => {
             const img = e.currentTarget;
             img.style.display = 'none';
             const parent = img.parentElement;
@@ -64,14 +65,13 @@ export default function MovieHero({ details, movie, onUpdate }: MovieHeroProps) 
               }
             }
           }}
-          loading="lazy"
         />
       ) : null}
       <div className="poster-fallback absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-900/20 to-neutral-900 flex items-center justify-center" style={{ display: details.poster ? 'none' : 'flex' }}>
         <Film className="h-24 w-24 text-neutral-600" />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
-      
+
       <div className="absolute bottom-0 left-0 right-0 p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">

@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { Link2, Play } from "lucide-react";
+import { Link2 } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
@@ -76,11 +77,11 @@ export default function MovieCollection({ collectionId, onMovieClick }: MovieCol
       <div className="relative rounded-lg overflow-hidden mb-4 border border-white/10">
         {collection.backdrop_path ? (
           <div className="relative h-64 bg-gradient-to-r from-emerald-900/50 to-neutral-900/50">
-            <img
+            <Image
               src={`${BACKDROP_BASE_URL}${collection.backdrop_path}`}
               alt={collection.name}
-              className="absolute inset-0 w-full h-full object-cover opacity-30"
-              loading="lazy"
+              fill
+              className="object-cover opacity-30"
             />
             <div className="relative z-10 h-full flex flex-col justify-end p-6">
               <div className="flex items-center gap-2 mb-2">
@@ -131,7 +132,7 @@ export default function MovieCollection({ collectionId, onMovieClick }: MovieCol
                 title={movie.title}
                 year={year}
                 poster={poster}
-                showInteraction={false}
+
                 onBeforeOpen={onMovieClick}
               />
             </motion.div>

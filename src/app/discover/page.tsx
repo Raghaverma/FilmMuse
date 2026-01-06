@@ -294,7 +294,7 @@ export default function DiscoverPage() {
                     title={movie.title}
                     year={year}
                     poster={poster}
-                    showInteraction={true}
+
                   />
                 );
               })}

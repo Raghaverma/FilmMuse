@@ -22,7 +22,7 @@ export default function MovieGrid({ movies, onUpdate }: MovieGridProps) {
           title={movie.title}
           year={movie.year}
           poster={movie.poster}
-          showInteraction={true}
+
           onUpdate={onUpdate}
         />
       ))}

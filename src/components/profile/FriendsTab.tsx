@@ -6,7 +6,7 @@ import { Users, UserPlus, Search, Check } from "lucide-react";
 import { useAuth } from "@/lib/firebase/auth-context";
 import FriendCard from "@/components/friends/FriendCard";
 import { getUserProfile } from "@/lib/firebase/auth";
-import { getFriendCount, getFriendshipStatus } from "@/lib/firebase/friends";
+import { getFriendshipStatus } from "@/lib/firebase/friends";
 import { searchUsers } from "@/lib/firebase/follows";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -93,7 +93,7 @@ export default function FriendsTab({ userId, isOwnProfile = true }: FriendsTabPr
           const data = docSnap.data();
           const friendId = data.user2;
           const friendProfile = await getUserProfile(friendId);
-          
+
           if (friendProfile) {
             friendsList.push({
               userId: friendId,
@@ -110,7 +110,7 @@ export default function FriendsTab({ userId, isOwnProfile = true }: FriendsTabPr
           const data = docSnap.data();
           const friendId = data.user1;
           const friendProfile = await getUserProfile(friendId);
-          
+
           if (friendProfile) {
             friendsList.push({
               userId: friendId,
@@ -150,7 +150,7 @@ export default function FriendsTab({ userId, isOwnProfile = true }: FriendsTabPr
       // Filter out current user and existing friends
       const friendIds = new Set(friends.map(f => f.userId));
       const filteredUsers = users.filter(u => u.uid !== user.uid && !friendIds.has(u.uid));
-      
+
       // Get friendship status for each user
       const usersWithStatus = await Promise.all(
         filteredUsers.map(async (u) => {
@@ -158,7 +158,7 @@ export default function FriendsTab({ userId, isOwnProfile = true }: FriendsTabPr
           return { ...u, status };
         })
       );
-      
+
       setSearchResults(usersWithStatus);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -198,7 +198,7 @@ export default function FriendsTab({ userId, isOwnProfile = true }: FriendsTabPr
 
       toast.success("Friend request sent");
       // Update status in search results
-      setSearchResults(prev => prev.map(u => 
+      setSearchResults(prev => prev.map(u =>
         u.uid === targetUserId ? { ...u, status: "requested" as const } : u
       ));
     } catch (error: unknown) {
