@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescape-entities */
 "use client";
 
 import * as React from "react";
@@ -8,6 +9,13 @@ import { MovieCardGridSkeleton } from "@/components/ui/skeleton";
 import StaggerList from "@/components/StaggerList";
 import NavBar from "@/components/home/NavBar";
 import Footer from "@/components/home/Footer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
@@ -110,10 +118,10 @@ export default function DiscoverPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-foreground dark:text-neutral-200 mb-2">
-                Discover Movies
+                {"Discover Movies"}
               </h1>
               <p className="text-muted-foreground dark:text-neutral-400">
-                Find your next favorite film
+                {"Find your next favorite film"}
               </p>
             </div>
             <button
@@ -152,21 +160,25 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-neutral-300 mb-2">
                   Genre
                 </label>
-                <select
-                  value={selectedGenre || ""}
-                  onChange={(e) => {
-                    setSelectedGenre(e.target.value ? parseInt(e.target.value) : undefined);
+                <Select
+                  value={selectedGenre?.toString() || "all"}
+                  onValueChange={(val) => {
+                    setSelectedGenre(val === "all" ? undefined : parseInt(val));
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
-                  <option value="">All Genres</option>
-                  {genres.map((genre) => (
-                    <option key={genre.id} value={genre.id}>
-                      {genre.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Genres" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genres</SelectItem>
+                    {genres.map((genre) => (
+                      <SelectItem key={genre.id} value={genre.id.toString()}>
+                        {genre.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Year Filter */}
@@ -174,21 +186,25 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-neutral-300 mb-2">
                   Year
                 </label>
-                <select
-                  value={selectedYear || ""}
-                  onChange={(e) => {
-                    setSelectedYear(e.target.value ? parseInt(e.target.value) : undefined);
+                <Select
+                  value={selectedYear?.toString() || "all"}
+                  onValueChange={(val) => {
+                    setSelectedYear(val === "all" ? undefined : parseInt(val));
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
-                  <option value="">All Years</option>
-                  {years.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Years" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Years</SelectItem>
+                    {years.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Rating Filter */}
@@ -196,21 +212,25 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-neutral-300 mb-2">
                   Min Rating
                 </label>
-                <select
-                  value={minRating || ""}
-                  onChange={(e) => {
-                    setMinRating(e.target.value ? parseFloat(e.target.value) : undefined);
+                <Select
+                  value={minRating?.toString() || "all"}
+                  onValueChange={(val) => {
+                    setMinRating(val === "all" ? undefined : parseFloat(val));
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
-                  <option value="">Any Rating</option>
-                  {[6, 7, 8, 9].map((rating) => (
-                    <option key={rating} value={rating}>
-                      {rating}+
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any Rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any Rating</SelectItem>
+                    {[6, 7, 8, 9].map((rating) => (
+                      <SelectItem key={rating} value={rating.toString()}>
+                        {rating}+
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Sort By */}
@@ -218,21 +238,25 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-neutral-300 mb-2">
                   Sort By
                 </label>
-                <select
+                <Select
                   value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
+                  onValueChange={(val) => {
+                    setSortBy(val);
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
-                  <option value="popularity.desc">Popularity</option>
-                  <option value="release_date.desc">Newest</option>
-                  <option value="release_date.asc">Oldest</option>
-                  <option value="vote_average.desc">Highest Rated</option>
-                  <option value="vote_average.asc">Lowest Rated</option>
-                  <option value="revenue.desc">Box Office</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popularity.desc">Popularity</SelectItem>
+                    <SelectItem value="release_date.desc">Newest</SelectItem>
+                    <SelectItem value="release_date.asc">Oldest</SelectItem>
+                    <SelectItem value="vote_average.desc">Highest Rated</SelectItem>
+                    <SelectItem value="vote_average.asc">Lowest Rated</SelectItem>
+                    <SelectItem value="revenue.desc">Box Office</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
