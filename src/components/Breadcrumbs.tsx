@@ -12,18 +12,18 @@ interface BreadcrumbItem {
 
 export default function Breadcrumbs({ items }: { items?: BreadcrumbItem[] }) {
   const pathname = usePathname();
-  
+
   const defaultItems: BreadcrumbItem[] = React.useMemo(() => {
     const paths = pathname.split("/").filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [{ label: "Home", href: "/" }];
-    
+
     let currentPath = "";
-    paths.forEach((path, index) => {
+    paths.forEach((path) => {
       currentPath += `/${path}`;
       const label = path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, " ");
       breadcrumbs.push({ label, href: currentPath });
     });
-    
+
     return breadcrumbs;
   }, [pathname]);
 

@@ -114,7 +114,7 @@ export async function logout(): Promise<void> {
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   try {
     const userDoc = await getDoc(doc(db, "users", uid));
-    if (userDoc.exists) {
+    if (userDoc.exists()) {
       return userDoc.data() as UserProfile;
     }
     return null;
@@ -177,7 +177,7 @@ export async function signInWithGoogle(): Promise<User> {
     // Handle Firebase Auth errors
     console.error("Google sign-in raw error:", error);
 
-    const safeError = error as { code?: string; message?: string; customData?: any; stack?: string };
+    const safeError = error as { code?: string; message?: string; customData?: unknown; stack?: string };
 
     // Attempt to extract meaningful error info even if it appears empty
     const errorDetails = {

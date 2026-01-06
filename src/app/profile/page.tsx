@@ -287,7 +287,7 @@ export default function ProfilePage() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => setActiveTab(tab.id as any)}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
                     className={cn(
                       "w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive
