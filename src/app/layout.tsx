@@ -1,38 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Bebas_Neue, Montserrat } from "next/font/google"; // [MODIFIED]
+import { Inter } from "next/font/google"; // [MODIFIED]
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/lib/firebase/auth-context";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import PageTransition from "@/components/PageTransition";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-});
-
-const bebasNeue = Bebas_Neue({ // [NEW]
-  weight: "400",
-  variable: "--font-bebas",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const montserrat = Montserrat({ // [NEW]
-  variable: "--font-montserrat",
-  subsets: ["latin"],
-  display: "swap",
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://filmmuse.app";
 
@@ -128,7 +102,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable} ${montserrat.variable} antialiased`} // [MODIFIED]
+        className={`${inter.variable} font-sans bg-black text-white antialiased`}
       >
         <ErrorBoundary>
           <ThemeProvider>
@@ -142,33 +116,22 @@ export default function RootLayout({
           toastOptions={{
             duration: 4000,
             style: {
-              background: "rgba(10, 10, 10, 0.95)",
+              background: "#1f1f1f",
               color: "#fff",
-              border: "1px solid rgba(16, 185, 129, 0.2)",
-              borderRadius: "0.75rem",
-              padding: "1rem",
-              backdropFilter: "blur(12px)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+              border: "1px solid #333",
             },
             success: {
               iconTheme: {
                 primary: "#10b981",
                 secondary: "#fff",
               },
-              style: {
-                border: "1px solid rgba(16, 185, 129, 0.3)",
-              },
             },
             error: {
               iconTheme: {
-                primary: "#ef4444",
+                primary: "#DC2626",
                 secondary: "#fff",
               },
-              style: {
-                border: "1px solid rgba(239, 68, 68, 0.3)",
-              },
             },
-            className: "font-sans",
           }}
         />
       </body>
