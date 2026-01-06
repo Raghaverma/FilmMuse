@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 interface Movie {
     id: number;

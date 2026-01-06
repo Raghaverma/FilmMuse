@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, Eye, Bell, HelpCircle, ChevronRight, Lock, Globe, Mail, Smartphone } from "lucide-react";
+import { User, Eye, Bell, HelpCircle, ChevronRight, Globe, Mail, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 type SettingsTab = "account" | "visibility" | "notifications" | "support";
 
 export default function SettingsPage() {
-    const { userProfile } = useAuth();
     const [activeTab, setActiveTab] = useState<SettingsTab>("account");
 
     const tabs = [
@@ -68,7 +67,7 @@ export default function SettingsPage() {
 }
 
 function AccountSettings() {
-    const { userProfile, user } = useAuth();
+    const { user, userProfile } = useAuth();
     const [showPasswordChange, setShowPasswordChange] = useState(false);
 
     return (
