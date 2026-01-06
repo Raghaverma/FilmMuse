@@ -55,6 +55,10 @@ export const metadata: Metadata = {
   },
 };
 
+import Sidebar from "@/components/layout/sidebar/Sidebar";
+import Header from "@/components/layout/header/Header";
+import BottomNav from "@/components/layout/mobile/BottomNav";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -107,7 +111,24 @@ export default function RootLayout({
         <ErrorBoundary>
           <ThemeProvider>
             <AuthProvider>
-              {children}
+              <div className="flex h-screen overflow-hidden">
+                {/* Sidebar - Desktop Only */}
+                <Sidebar />
+
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
+                  {/* Header */}
+                  <Header />
+
+                  {/* Page Content */}
+                  <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
+                    {children}
+                  </main>
+
+                  {/* Bottom Navigation - Mobile Only */}
+                  <BottomNav />
+                </div>
+              </div>
             </AuthProvider>
           </ThemeProvider>
         </ErrorBoundary>
