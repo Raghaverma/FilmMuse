@@ -102,7 +102,7 @@ export default function ContinueWatchingCarousel() {
                                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
                                     <div
                                         className="h-full bg-primary"
-                                        style={{ width: `${Math.random() * 100}%` }}
+                                        style={{ width: "45%" }}
                                     />
                                 </div>
                             </div>
@@ -110,7 +110,7 @@ export default function ContinueWatchingCarousel() {
                             <div className="p-4">
                                 <h3 className="font-semibold text-white truncate">{movie.title}</h3>
                                 <p className="text-sm text-gray-400 mt-1">
-                                    {Math.floor(Math.random() * 60)} min remaining
+                                    35 min remaining
                                 </p>
                             </div>
                         </Link>
