@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Play, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import NextImage from "next/image";
 import { toast } from "react-hot-toast";
 
 interface Movie {
@@ -130,10 +131,12 @@ export default function ContinueWatchingCarousel() {
                                 <div className="glass-card rounded-xl overflow-hidden hover:bg-white/10 transition-all">
                                     {/* Compact Poster */}
                                     <div className="relative aspect-video">
-                                        <img
+                                        <NextImage
                                             src={`${IMAGE_BASE_URL}${movie.backdrop_path || movie.poster_path}`}
                                             alt={movie.title}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            className="object-cover"
+                                            sizes="220px"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
@@ -186,6 +189,6 @@ export default function ContinueWatchingCarousel() {
                     <kbd className="px-2 py-0.5 rounded bg-white/5 border border-white/10 ml-1">Enter</kbd> to resume
                 </p>
             </div>
-        </section>
+        </section >
     );
 }

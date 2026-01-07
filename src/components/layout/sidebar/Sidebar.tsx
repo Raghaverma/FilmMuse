@@ -24,7 +24,7 @@ export default function Sidebar() {
         try {
             await logout();
             toast.success("Logged out successfully");
-        } catch (error) {
+        } catch {
             toast.error("Failed to log out");
         }
     };

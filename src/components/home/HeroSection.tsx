@@ -1,11 +1,10 @@
 "use client";
 
-import { useAuth } from "@/lib/firebase/auth-context";
+
 import { Sparkles, Shuffle, Play, TrendingUp, Clock, Plus, List } from "lucide-react";
 import Link from "next/link";
 
 export default function HeroSection() {
-    const { userProfile } = useAuth();
 
     const scrollToQueue = () => {
         const queueSection = document.getElementById("smart-queue");

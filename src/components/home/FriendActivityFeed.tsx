@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Heart, MessageCircle, Star } from "lucide-react";
 import Link from "next/link";
+import NextImage from "next/image";
 
 interface Activity {
     id: string;
@@ -130,10 +131,12 @@ export default function FriendActivityFeed() {
                                     href={`/movie/${activity.movie.id}`}
                                     className="flex-shrink-0 w-12 h-16 rounded-lg overflow-hidden hover:scale-105 transition-transform"
                                 >
-                                    <img
+                                    <NextImage
                                         src={`https://image.tmdb.org/t/p/w92${activity.movie.poster}`}
                                         alt={activity.movie.title}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        className="object-cover"
+                                        sizes="48px"
                                     />
                                 </Link>
                             </div>

@@ -14,7 +14,7 @@ interface Friend {
 }
 
 export default function FriendsPage() {
-    const { user, userProfile } = useAuth();
+    const { user } = useAuth();
     const [friends, setFriends] = useState<Friend[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
@@ -53,11 +53,6 @@ export default function FriendsPage() {
             setLoading(false);
         }, 500);
     }, [user]);
-
-    const handleAddFriend = (friendId: string, username: string) => {
-        toast.success(`Friend request sent to ${username}`);
-        // Add Firebase friend request logic here
-    };
 
     const handleRemoveFriend = (friendId: string, username: string) => {
         setFriends(prev => prev.filter(f => f.uid !== friendId));
@@ -145,8 +140,8 @@ export default function FriendsPage() {
                     <button
                         onClick={() => setActiveTab("friends")}
                         className={`px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === "friends"
-                                ? "text-white"
-                                : "text-gray-400 hover:text-white"
+                            ? "text-white"
+                            : "text-gray-400 hover:text-white"
                             }`}
                     >
                         Friends ({friendsCount})
@@ -157,8 +152,8 @@ export default function FriendsPage() {
                     <button
                         onClick={() => setActiveTab("requests")}
                         className={`px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === "requests"
-                                ? "text-white"
-                                : "text-gray-400 hover:text-white"
+                            ? "text-white"
+                            : "text-gray-400 hover:text-white"
                             }`}
                     >
                         Requests ({requestsCount})
@@ -265,7 +260,7 @@ export default function FriendsPage() {
                         <UserPlus className="h-12 w-12 text-primary mx-auto mb-3" />
                         <p className="text-gray-300 mb-4">Know someone who loves films?</p>
                         <button
-                            onClick={() => toast.info("Friend search coming soon!")}
+                            onClick={() => toast("Friend search coming soon!", { icon: "ℹ️" })}
                             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold transition-all focus-strong"
                         >
                             <UserPlus className="h-5 w-5" />

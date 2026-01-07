@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 import Link from "next/link";
+import NextImage from "next/image";
 
 interface Movie {
     id: number;
@@ -68,11 +69,12 @@ export default function RecommendedGrid() {
                             className="group relative rounded-xl overflow-hidden bg-card hover:scale-[1.02] transition-transform"
                         >
                             <div className="relative aspect-[2/3]">
-                                <img
+                                <NextImage
                                     src={`${IMAGE_BASE_URL}${movie.poster_path}`}
                                     alt={movie.title}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 25vw"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 

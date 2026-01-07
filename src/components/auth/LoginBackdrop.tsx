@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Film } from "lucide-react";
+import NextImage from "next/image";
 
 interface Movie {
     id: number;
@@ -138,10 +139,12 @@ export default function LoginBackdrop() {
                                 className="relative h-[200px] w-[140px] shrink-0 overflow-hidden rounded-lg border border-white/10 shadow-lg cursor-pointer group"
                                 whileHover={{ y: -5, scale: 1.05 }}
                             >
-                                <img
+                                <NextImage
                                     src={`${POSTER_BASE_URL}${movie.poster_path}`}
                                     alt={movie.title}
-                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    fill
+                                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                    sizes="140px"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                 <div className="absolute top-2 right-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold">
