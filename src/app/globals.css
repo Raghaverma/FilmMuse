@@ -29,46 +29,53 @@
   /* Fonts */
   --font-inter: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* Colors - Premium Dark Mode */
-  --background: #000000;
+  /* Colors - Layered Dark Mode */
+  --background: #0A0A0A;
+  /* Near black, not pure black */
   --foreground: #FFFFFF;
 
-  --card: #0F0F0F;
-  /* Dark Gray */
+  --surface-base: #0A0A0A;
+  /* Base layer */
+  --surface-raised: #111111;
+  /* Raised elements */
+  --surface-overlay: #1A1A1A;
+  /* Overlays, modals */
+
+  --card: #111111;
+  /* Raised surface */
   --card-foreground: #FFFFFF;
 
   --popover: #1A1A1A;
-  /* Charcoal */
+  /* Overlay surface */
   --popover-foreground: #FFFFFF;
 
-  /* Brand Colors */
+  /* Brand Colors - Limited palette */
   --primary: #EF4444;
-  /* Brand Red */
+  /* Brand Red - primary accent */
   --primary-foreground: #FFFFFF;
 
-  --secondary: #262626;
-  /* Medium Gray for backgrounds */
+  --secondary: #1A1A1A;
+  /* Overlay surface for backgrounds */
   --secondary-foreground: #FFFFFF;
 
-  --muted: #262626;
-  /* Medium Gray */
+  --muted: #1A1A1A;
   --muted-foreground: #737373;
   /* Light Gray */
 
   --accent: #FBBF24;
-  /* Gold/Yellow */
+  /* Gold - semantic only (ratings) */
   --accent-foreground: #000000;
 
   --destructive: #991B1B;
   /* Dark Red */
   --destructive-foreground: #FFFFFF;
 
-  --border: #262626;
-  --input: #262626;
+  --border: rgba(255, 255, 255, 0.08);
+  /* Subtle borders */
+  --input: #1A1A1A;
   --ring: #EF4444;
 
   --radius: 0.75rem;
-  /* 12px for modern look */
 }
 
 @layer base {
@@ -86,27 +93,72 @@
     text-wrap: balance;
   }
 
+  /* Surface Layers */
+  .surface-base {
+    background-color: var(--surface-base);
+  }
+
+  .surface-raised {
+    background-color: var(--surface-raised);
+  }
+
+  .surface-overlay {
+    background-color: var(--surface-overlay);
+  }
+
+  /* Gradients */
   .bg-gradient-red {
     background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
   }
 
   .bg-gradient-dark {
-    background: linear-gradient(180deg, transparent 0%, #000000 100%);
+    background: linear-gradient(180deg, transparent 0%, #0A0A0A 100%);
   }
 
   .bg-gradient-shimmer {
     background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1), transparent);
   }
 
+  /* Glass Effects - Lighter & Faster */
   .glass {
-    background: rgba(26, 26, 26, 0.85);
-    backdrop-filter: blur(40px) saturate(150%);
+    background: rgba(17, 17, 17, 0.8);
+    backdrop-filter: blur(24px) saturate(120%);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .glass-card {
-    background: rgba(26, 26, 26, 0.6);
-    backdrop-filter: blur(20px);
+    background: rgba(17, 17, 17, 0.5);
+    backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* Keyboard Focus */
+  .focus-primary {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .focus-strong {
+    @apply focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Typography Hierarchy */
+  .text-display {
+    @apply text-4xl md:text-5xl font-bold tracking-tight;
+  }
+
+  .text-headline {
+    @apply text-2xl md:text-3xl font-bold tracking-tight;
+  }
+
+  .text-title {
+    @apply text-xl md:text-2xl font-semibold;
+  }
+
+  .text-body-large {
+    @apply text-base md:text-lg;
+  }
+
+  .text-meta {
+    @apply text-xs text-muted-foreground;
   }
 }

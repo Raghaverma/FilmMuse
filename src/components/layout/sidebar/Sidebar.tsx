@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/firebase/auth-context";
-import { Film, Home, Compass, Heart, Users, Settings, LogOut, ChevronRight } from "lucide-react";
+import { Film, Home, Compass, Heart, Users, Settings, LogOut, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/firebase/auth";
 import { toast } from "react-hot-toast";
 
 const navItems = [
-    { name: "Home", href: "/", icon: Home },
-    { name: "Discover", href: "/discover", icon: Compass },
-    { name: "Watchlist", href: "/watchlist", icon: Heart },
+    { name: "Dashboard", href: "/", icon: Home, shortcut: "⌘D" },
+    { name: "Find Something", href: "/discover", icon: Compass, shortcut: "⌘F" },
+    { name: "My Queue", href: "/watchlist", icon: Heart, shortcut: "⌘Q" },
     { name: "Friends", href: "/friends", icon: Users },
     { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -66,6 +66,17 @@ export default function Sidebar() {
                     </Link>
                 )}
 
+                {/* Quick Add Button */}
+                <div className="px-4 mb-4">
+                    <Link
+                        href="/lists/new"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold transition-all hover:scale-[1.02] focus-strong"
+                    >
+                        <Plus className="h-5 w-5" />
+                        <span>Quick Add</span>
+                    </Link>
+                </div>
+
                 {/* Navigation */}
                 <nav className="flex-1 px-4 space-y-1">
                     {navItems.map((item) => {
@@ -77,16 +88,21 @@ export default function Sidebar() {
                                 key={item.name}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group",
+                                    "relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group focus-primary",
                                     isActive
-                                        ? "bg-primary/10 text-primary shadow-lg shadow-primary/10"
+                                        ? "bg-primary/15 text-primary shadow-lg shadow-primary/10 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:rounded-r-full before:bg-primary"
                                         : "text-gray-400 hover:text-white hover:bg-white/5"
                                 )}
                             >
                                 <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
-                                <span>{item.name}</span>
+                                <span className="flex-1">{item.name}</span>
+                                {item.shortcut && (
+                                    <span className="text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {item.shortcut}
+                                    </span>
+                                )}
                                 {isActive && (
-                                    <div className="ml-auto h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                 )}
                             </Link>
                         );

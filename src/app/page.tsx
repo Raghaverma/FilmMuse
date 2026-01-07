@@ -6,7 +6,7 @@ import StatisticsWidgets from "@/components/home/StatisticsWidgets";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen surface-base">
       <HeroSection />
       <ContinueWatchingCarousel />
       <StatisticsWidgets />

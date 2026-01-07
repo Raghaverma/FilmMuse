@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img.omdbapi.com" },
       { protocol: "https", hostname: "image.tmdb.org" },
       { protocol: "https", hostname: "www.themoviedb.org" },
+      { protocol: "https", hostname: "img.youtube.com" },
     ],
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60,
