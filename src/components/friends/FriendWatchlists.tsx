@@ -62,7 +62,7 @@ export default function FriendWatchlists() {
                                     {list.owner.avatar}
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-white group-hover:text-primary transition-colors">{list.owner.name}'s Watchlist</h3>
+                                    <h3 className="font-bold text-white group-hover:text-primary transition-colors">{list.owner.name}&apos;s Watchlist</h3>
                                     <div className="flex items-center gap-2 text-xs text-secondary">
                                         <span>{list.filmCount} films</span>
                                         <span>•</span>

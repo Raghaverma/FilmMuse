@@ -139,7 +139,7 @@ export default function FriendFeed() {
 
                                     {item.type === "review" && item.review && (
                                         <div className="mt-2 text-sm text-gray-300 italic">
-                                            "{item.review}"
+                                            &quot;{item.review}&quot;
                                         </div>
                                     )}
                                 </div>
@@ -166,7 +166,7 @@ export default function FriendFeed() {
             ))}
 
             <div className="text-center pt-4 text-sm text-gray-500">
-                You're all caught up!
+                You&apos;re all caught up!
             </div>
         </div>
     );

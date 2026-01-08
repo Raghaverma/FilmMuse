@@ -100,7 +100,7 @@ export default function TasteMatching() {
 
                         <div className="mb-4">
                             <p className="text-sm text-gray-300 bg-white/5 rounded-lg px-3 py-2 border border-white/5">
-                                "{match.agreement}"
+                                &quot;{match.agreement}&quot;
                             </p>
                         </div>
 
